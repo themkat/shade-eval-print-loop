@@ -1,0 +1,2 @@
+* Shade Eval Print Loop (SEPL)
+Shadertoy on steroids, but powered by Scheme for settings. Dynamically set textures, variables, and other logic that affects the execution.
