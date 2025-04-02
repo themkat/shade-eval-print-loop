@@ -130,6 +130,8 @@ impl ApplicationHandler for SEPLApp {
             match program {
                 Ok(program) => {
                     self.state.program = program;
+                    self.window.request_redraw();
+                    println!("Refreshed program");
                 },
                 Err(err) => {
                     self.last_error = err;
