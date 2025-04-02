@@ -148,6 +148,9 @@ impl ApplicationHandler for SEPLApp {
             glium::winit::event::WindowEvent::CloseRequested => {
                 event_loop.exit();
             }
+            glium::winit::event::WindowEvent::Resized(new_size) => {
+                self.display.resize(new_size.into());
+            }
             glium::winit::event::WindowEvent::RedrawRequested => {
                 let mut frame = self.display.draw();
                 frame.draw(
