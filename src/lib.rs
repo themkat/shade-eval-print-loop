@@ -167,4 +167,8 @@ impl ApplicationHandler for SEPLApp {
             _ => {}
         }
     }
+
+    fn about_to_wait(&mut self, _event_loop: &glium::winit::event_loop::ActiveEventLoop) {
+        self.window.request_redraw();
+    }
 }
