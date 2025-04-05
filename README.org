@@ -1,2 +1,3 @@
+[[https://github.com/themkat/shade-eval-print-loop/actions/workflows/build.yml][file:https://github.com/themkat/shade-eval-print-loop/actions/workflows/build.yml/badge.svg]]
 * Shade Eval Print Loop (SEPL)
 Shadertoy on steroids, but powered by Scheme for settings. Dynamically set textures, variables, and other logic that affects the execution.
