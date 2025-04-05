@@ -1,8 +1,9 @@
-use std::{collections::HashMap, env::args, fs, path::Path, sync::mpsc::{channel, Receiver}};
+use std::{collections::HashMap, env::args, fs, path::Path, sync::mpsc::{channel, Receiver}, thread};
 
+use command::RenderCommand;
 use geometry::{SQUARE, Vertex};
 use glium::{
-    backend::{glutin::SimpleWindowBuilder, Facade}, glutin::surface::WindowSurface, index::NoIndices, uniforms::DynamicUniforms, winit::{application::ApplicationHandler, event_loop::EventLoop, window::Window}, Display, DrawParameters, Program, ProgramCreationError::CompilationError, Surface, VertexBuffer
+    backend::{glutin::SimpleWindowBuilder, Facade}, glutin::surface::WindowSurface, index::NoIndices, uniforms::{AsUniformValue, DynamicUniforms, UniformValue}, winit::{application::ApplicationHandler, event_loop::EventLoop, window::Window}, Display, DrawParameters, Program, ProgramCreationError::CompilationError, Surface, VertexBuffer
 };
 use notify::{Event, Watcher};
 use scheme::NetworkScheme;
@@ -35,18 +36,25 @@ pub fn init() {
     let event_loop = EventLoop::new().expect("Failed to create event loop");
     let mut app = SEPLApp::new(&event_loop, input_file);
 
-    NetworkScheme::main_loop();
+    let (render_sender, render_receiver) = channel();
+    let (sender, receiver) = channel();
+    thread::spawn(move || {
+        let scheme = NetworkScheme::new_env(receiver, render_sender);
+        scheme.main_loop();
+    });
+    
     event_loop.run_app(&mut app).expect("Could not run app");
 }
 
 struct SEPLApp {
     display: Display<WindowSurface>,
     window: Window,
-    // TODO: option last error?
     last_error: String,
     input_file: String,
     input_file_watcher: Box<dyn Watcher>,
     input_file_events: Receiver<Result<Event, notify::Error>>,
+    // TODO: a field for scheme input? What to call it? settings_input_port? Have it optional so we can easily turn if off?
+    render_commands: Option<Receiver<RenderCommand>>,
     state: GLState,
 }
 
@@ -54,7 +62,23 @@ struct GLState {
     vertex_buffer: VertexBuffer<Vertex>,
     index_buffer: NoIndices,
     program: Program,
-    uniforms: DynamicUniforms<'static, 'static>,
+    // TODO: what lifetimes should we give these.... 
+    //uniforms: DynamicUniforms<'a, 'a>,
+    uniforms: HashMap<String, command::UniformValue>
+}
+
+/// Convert internal uniform commands to a Glium uniform value
+impl AsUniformValue for command::UniformValue {
+    fn as_uniform_value(&self) -> UniformValue<'_> {
+        match self {
+            command::UniformValue::Float(num) => UniformValue::Float(*num),
+            command::UniformValue::Matrix(matrix) => {
+                let matrix: [[f32; 4]; 4] = (*matrix).into();
+                UniformValue::Mat4(matrix)
+            },
+            command::UniformValue::Texture2D(image_buffer) => todo!(),
+        }
+    }
 }
 
 impl SEPLApp {
@@ -89,13 +113,18 @@ impl SEPLApp {
             input_file: fragment_shader_file,
             input_file_events: receiver,
             input_file_watcher: Box::new(input_file_watcher),
+            render_commands: None,
             state: GLState {
                 vertex_buffer,
                 index_buffer,
                 program: program.expect("If this fails, it will be the end of Europe as we know it"),
-                uniforms: DynamicUniforms::new(),
+                uniforms: HashMap::new(),
             },
         }
+    }
+
+    fn set_render_command_receiver(&mut self, receiver: Receiver<RenderCommand>) {
+        self.render_commands.replace(receiver);
     }
 
     /// Read fragment shader from file, and create shader program combination. In our simplified scenario, the only reasonable error is a compilation error, so our error type is simply a String. 
@@ -145,6 +174,19 @@ impl ApplicationHandler for SEPLApp {
         // TODO: present compilation errors somewhere
         //       egui? that opens up possibilities for user configured GUIs?
 
+        // look for events received
+        // process one at a time to avoid clogging render loop
+        // TODO: check if there are better ways to implement this
+        if let Some(receiver) = &self.render_commands {
+            if let Ok(command) = receiver.try_recv() {
+                match command {
+                    RenderCommand::SetUniform(name, uniform_value) => {
+                        self.state.uniforms.insert(name, uniform_value);
+                    },
+                }
+            }
+        }
+
         match event {
             glium::winit::event::WindowEvent::CloseRequested => {
                 event_loop.exit();
@@ -153,16 +195,22 @@ impl ApplicationHandler for SEPLApp {
                 self.display.resize(new_size.into());
             }
             glium::winit::event::WindowEvent::RedrawRequested => {
+                let mut dynamic_uniforms = DynamicUniforms::new();
+                for (name, value) in &self.state.uniforms {
+                    dynamic_uniforms.add(name.as_str(), value);
+                }
+                
                 let mut frame = self.display.draw();
                 frame.draw(
                     &self.state.vertex_buffer,
                     &self.state.index_buffer,
                     &self.state.program,
-                    &self.state.uniforms,
+                    &dynamic_uniforms,
                     &DrawParameters::default(),
                 ).expect("Could not draw frame");
 
                 frame.finish().expect("Could not switch framebuffers");
+                self.display.flush();
             }
             // TODO: other events
             _ => {}
