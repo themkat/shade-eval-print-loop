@@ -1,6 +1,6 @@
-use std::{collections::HashMap, env::args, fs, path::Path, sync::mpsc::{channel, Receiver}, thread};
+use std::{collections::HashMap, env::args, fs, path::Path, sync::mpsc::{channel, Receiver, Sender}, thread};
 
-use command::RenderCommand;
+use command::{RenderCommand, StateUpdateCommand};
 use geometry::{SQUARE, Vertex};
 use glium::{
     backend::{glutin::SimpleWindowBuilder, Facade}, glutin::surface::WindowSurface, index::NoIndices, uniforms::{AsUniformValue, DynamicUniforms, UniformValue}, winit::{application::ApplicationHandler, event_loop::EventLoop, window::Window}, Display, DrawParameters, Program, ProgramCreationError::CompilationError, Surface, VertexBuffer
@@ -44,6 +44,7 @@ pub fn init() {
     });
 
     app.set_render_command_receiver(render_receiver);
+    app.set_state_update_command_sender(sender);
     event_loop.run_app(&mut app).expect("Could not run app");
 }
 
@@ -54,8 +55,11 @@ struct SEPLApp {
     input_file: String,
     input_file_watcher: Box<dyn Watcher>,
     input_file_events: Receiver<Result<Event, notify::Error>>,
-    // TODO: a field for scheme input? What to call it? settings_input_port? Have it optional so we can easily turn if off?
+
+    // fields for channels
     render_commands: Option<Receiver<RenderCommand>>,
+    state_update_commands: Option<Sender<StateUpdateCommand>>,
+    
     state: GLState,
 }
 
@@ -115,6 +119,7 @@ impl SEPLApp {
             input_file_events: receiver,
             input_file_watcher: Box::new(input_file_watcher),
             render_commands: None,
+            state_update_commands: None,
             state: GLState {
                 vertex_buffer,
                 index_buffer,
@@ -126,6 +131,10 @@ impl SEPLApp {
 
     fn set_render_command_receiver(&mut self, receiver: Receiver<RenderCommand>) {
         self.render_commands.replace(receiver);
+    }
+
+    fn set_state_update_command_sender(&mut self, sender: Sender<StateUpdateCommand>) {
+        self.state_update_commands.replace(sender);
     }
 
     /// Read fragment shader from file, and create shader program combination. In our simplified scenario, the only reasonable error is a compilation error, so our error type is simply a String. 
@@ -180,6 +189,7 @@ impl ApplicationHandler for SEPLApp {
         // TODO: check if there are better ways to implement this
         if let Some(receiver) = &self.render_commands {
             if let Ok(command) = receiver.try_recv() {
+                println!("Received event!");
                 match command {
                     RenderCommand::SetUniform(name, uniform_value) => {
                         self.state.uniforms.insert(name, uniform_value);
@@ -194,6 +204,10 @@ impl ApplicationHandler for SEPLApp {
             }
             glium::winit::event::WindowEvent::Resized(new_size) => {
                 self.display.resize(new_size.into());
+
+                if let Some(sender) = &self.state_update_commands {
+                    sender.send(StateUpdateCommand::ScreenSizeChanged(new_size.width, new_size.height)).unwrap();
+                }
             }
             glium::winit::event::WindowEvent::RedrawRequested => {
                 let mut dynamic_uniforms = DynamicUniforms::new();

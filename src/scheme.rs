@@ -1,10 +1,10 @@
-use std::{fmt::Display, io::{BufRead, BufReader, Write}, net::TcpListener, sync::mpsc::{Receiver, Sender}, thread};
+use std::{fmt::Display, io::{BufRead, BufReader, Write}, net::TcpListener, sync::{mpsc::{Receiver, Sender}, Arc, Mutex}, thread};
 
 use nalgebra::{Matrix4, RowVector4};
 use steel::{gc::ShareableMut, parser::ast::IteratorExtensions, steel_vm::{engine::Engine, register_fn::RegisterFn}, SteelErr, SteelVal};
 use steel_derive::Steel;
 
-use crate::command::{Command, RenderCommand, UniformValue};
+use crate::command::{StateUpdateCommand, RenderCommand, UniformValue};
 
 /// The scheme process' information on the state of the renderer.
 struct RenderState {
@@ -12,13 +12,19 @@ struct RenderState {
     screen_size: (u32, u32)
 }
 
+impl Default for RenderState {
+    // TODO: initial values or better defaults
+    fn default() -> Self {
+        Self { screen_size: Default::default() }
+    }
+}
+
 /// Scheme REPL running as a process over the network on port 42069. Sends messages on a channel.
 pub struct NetworkScheme {
     scheme_vm: Engine,
-    input_port: Receiver<Command>,
 
     /// Whether previous expression was an error
-    prev_was_error: bool,
+    prev_was_error: bool
 }
 
 // TODO: should probably have a way to get data from the program as well? key strokes etc. maybe also some status on rendering we can fiddle with in scheme?
@@ -66,7 +72,7 @@ impl NetworkScheme {
     
     // TODO: a method for repl loop? (for each connection?) should we support multiple in parallel?
 
-    pub fn new_env(input_port: Receiver<Command>,
+    pub fn new_env(input_port: Receiver<StateUpdateCommand>,
                output_port: Sender<RenderCommand>) -> Self {
         let mut scheme_vm = Engine::new(); 
 
@@ -98,8 +104,31 @@ impl NetworkScheme {
         // TODO: matrix loaders like perspective, lookAt etc. useful for prototyping
 
         // TODO: loading images from file. what should our command formats image type be based upon? DynamicImage? or just a RgbaImage with 8 bits?
+
+        // start a background process that listens to updates from renderer
+        // TODO: maybe this setup fits better as a separate method being called in main loop?
+        let render_state = Arc::new(Mutex::new(RenderState::default()));
+        let render_state_clone = Arc::clone(&render_state);
+        thread::spawn(move || {
+            let render_state = render_state_clone;
+            loop {
+                if let Ok(command) = input_port.recv() {
+                    match command {
+                        StateUpdateCommand::ScreenSizeChanged(width, height) => {
+                            render_state.lock().unwrap().screen_size = (width, height);
+                        },
+                    }
+                }
+            }
+        });
+
+        // function to fetch screen size information
+        scheme_vm.register_fn("screen-size", move || {
+            render_state.lock().unwrap().screen_size
+        });
         
-        Self { scheme_vm, input_port, prev_was_error: false }
+        
+        Self { scheme_vm, prev_was_error: false }
     }
 
     /// Evaluates a scheme expression and returns the return value as a String.
@@ -201,7 +230,7 @@ mod tests {
 
     use nalgebra::Matrix4;
 
-    use crate::{command::{Command, RenderCommand, UniformValue}, scheme::Matrix};
+    use crate::{command::{StateUpdateCommand, RenderCommand, UniformValue}, scheme::Matrix};
 
     use super::NetworkScheme;
 
@@ -209,17 +238,18 @@ mod tests {
         state: NetworkScheme,
         // receiver channel used to test that the NetworkScheme sends correct render data
         render_receiver: Receiver<RenderCommand>,
+        state_sender: Sender<StateUpdateCommand>
     }
 
     // A simple test harness to make the test functions easier to read and maintain
     impl TestHarness {
         fn new() -> Self {
             let (render_sender, render_receiver) = channel::<RenderCommand>();
-            let (_, other_receiver) = channel::<Command>();
+            let (state_sender, other_receiver) = channel::<StateUpdateCommand>();
             
             let state = NetworkScheme::new_env(other_receiver, render_sender);
 
-            TestHarness { state, render_receiver }
+            TestHarness { state, render_receiver, state_sender }
         }
         
         fn get_last_event(&mut self) -> Result<RenderCommand, RecvTimeoutError> {
@@ -276,5 +306,16 @@ mod tests {
                                                                                                12.0, 13.0, 14.0, 15.0])))), command);
     }
 
-    // TODO: screen size should obviously be an input we can get! to calculate the screen UV coordinate from gl_FragCoord
+    #[test]
+    fn screen_size_state_update_test() {
+        let mut testharness = TestHarness::new();
+
+        testharness.state_sender.send(StateUpdateCommand::ScreenSizeChanged(250, 820)).unwrap();
+
+        let result = testharness.state.eval("(screen-size)".to_string());
+        assert!(!testharness.state.prev_was_error);
+        // no cons cells, so list instead
+        assert_eq!("(250 820)\n".to_string(), result);
+        
+    }
 }

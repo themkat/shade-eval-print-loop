@@ -19,7 +19,9 @@ pub enum UniformValue {
 pub enum RenderCommand {
     // TODO: what kind of value?
     SetUniform(String, UniformValue),
-} 
+}
 
 // TODO: decide on a structure for sending commands the other way
-pub enum Command {}
+pub enum StateUpdateCommand {
+    ScreenSizeChanged(u32, u32)
+}
