@@ -9,6 +9,7 @@ use scheme::NetworkScheme;
 
 mod geometry;
 mod scheme;
+mod command;
 
 const VERTEX_SHADER: &str = "#version 330 core
 
