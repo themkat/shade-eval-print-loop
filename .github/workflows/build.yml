@@ -14,6 +14,7 @@ jobs:
         with:
           toolchain: stable
           components: clippy, rustfmt
+          rustflags: ""
       - name: Check if formatted correctly
         run: |
           cargo fmt --check
