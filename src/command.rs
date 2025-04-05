@@ -23,5 +23,5 @@ pub enum RenderCommand {
 
 // TODO: decide on a structure for sending commands the other way
 pub enum StateUpdateCommand {
-    ScreenSizeChanged(u32, u32)
+    ScreenSizeChanged(u32, u32),
 }

@@ -1,16 +1,30 @@
-use std::{collections::HashMap, env::args, fs, path::Path, sync::mpsc::{channel, Receiver, Sender}, thread};
+use std::{
+    collections::HashMap,
+    env::args,
+    fs,
+    path::Path,
+    sync::mpsc::{Receiver, Sender, channel},
+    thread,
+};
 
 use command::{RenderCommand, StateUpdateCommand};
 use geometry::{SQUARE, Vertex};
 use glium::{
-    backend::{glutin::SimpleWindowBuilder, Facade}, glutin::surface::WindowSurface, index::NoIndices, uniforms::{AsUniformValue, DynamicUniforms, UniformValue}, winit::{application::ApplicationHandler, event_loop::EventLoop, window::Window}, Display, DrawParameters, Program, ProgramCreationError::CompilationError, Surface, VertexBuffer
+    Display, DrawParameters, Program,
+    ProgramCreationError::CompilationError,
+    Surface, VertexBuffer,
+    backend::{Facade, glutin::SimpleWindowBuilder},
+    glutin::surface::WindowSurface,
+    index::NoIndices,
+    uniforms::{AsUniformValue, DynamicUniforms, UniformValue},
+    winit::{application::ApplicationHandler, event_loop::EventLoop, window::Window},
 };
 use notify::{Event, Watcher};
 use scheme::NetworkScheme;
 
+mod command;
 mod geometry;
 mod scheme;
-mod command;
 
 const VERTEX_SHADER: &str = "#version 330 core
 
@@ -59,7 +73,7 @@ struct SEPLApp {
     // fields for channels
     render_commands: Option<Receiver<RenderCommand>>,
     state_update_commands: Option<Sender<StateUpdateCommand>>,
-    
+
     state: GLState,
 }
 
@@ -67,9 +81,9 @@ struct GLState {
     vertex_buffer: VertexBuffer<Vertex>,
     index_buffer: NoIndices,
     program: Program,
-    // TODO: what lifetimes should we give these.... 
+    // TODO: what lifetimes should we give these....
     //uniforms: DynamicUniforms<'a, 'a>,
-    uniforms: HashMap<String, command::UniformValue>
+    uniforms: HashMap<String, command::UniformValue>,
 }
 
 /// Convert internal uniform commands to a Glium uniform value
@@ -80,7 +94,7 @@ impl AsUniformValue for command::UniformValue {
             command::UniformValue::Matrix(matrix) => {
                 let matrix: [[f32; 4]; 4] = (*matrix).into();
                 UniformValue::Mat4(matrix)
-            },
+            }
             command::UniformValue::Texture2D(image_buffer) => todo!(),
         }
     }
@@ -100,15 +114,23 @@ impl SEPLApp {
         // listen to changes on the input file
         let (sender, receiver) = channel();
         // TODO: do we need to keep this around? or is it enough to just keep the receiver channel? Play around with it
-        let mut input_file_watcher = notify::recommended_watcher(sender).expect("Could not initialize file watcher");
-        input_file_watcher.watch(Path::new(fragment_shader_file.as_str()), notify::RecursiveMode::NonRecursive).expect("Could not create file watcher");
+        let mut input_file_watcher =
+            notify::recommended_watcher(sender).expect("Could not initialize file watcher");
+        input_file_watcher
+            .watch(
+                Path::new(fragment_shader_file.as_str()),
+                notify::RecursiveMode::NonRecursive,
+            )
+            .expect("Could not create file watcher");
 
         // fallback initially to a placeholder if compilation error
         let mut program = Self::create_program(&display, fragment_shader_file.as_str());
         let mut last_error = String::new();
         if let Err(err) = program {
-            last_error = err;            
-            program = Program::from_source(&display, VERTEX_SHADER, PLACEHOLDER_FRAGMENT_SHADER, None).map_err(|_| "placeholder".to_string());
+            last_error = err;
+            program =
+                Program::from_source(&display, VERTEX_SHADER, PLACEHOLDER_FRAGMENT_SHADER, None)
+                    .map_err(|_| "placeholder".to_string());
         }
 
         Self {
@@ -123,7 +145,8 @@ impl SEPLApp {
             state: GLState {
                 vertex_buffer,
                 index_buffer,
-                program: program.expect("If this fails, it will be the end of Europe as we know it"),
+                program: program
+                    .expect("If this fails, it will be the end of Europe as we know it"),
                 uniforms: HashMap::new(),
             },
         }
@@ -137,18 +160,20 @@ impl SEPLApp {
         self.state_update_commands.replace(sender);
     }
 
-    /// Read fragment shader from file, and create shader program combination. In our simplified scenario, the only reasonable error is a compilation error, so our error type is simply a String. 
+    /// Read fragment shader from file, and create shader program combination. In our simplified scenario, the only reasonable error is a compilation error, so our error type is simply a String.
     fn create_program<F: Facade>(display: &F, filename: &str) -> Result<Program, String> {
         let fragment_shader =
             fs::read_to_string(filename).expect("Could not read fragment shader!");
 
-        Program::from_source(display, VERTEX_SHADER, fragment_shader.as_str(), None).map_err(|err| {
-            if let CompilationError(compile_error, _) = err {
-                compile_error
-            } else {
-                "POSSIBLE DRIVER ISSUE!".to_string()
-            }
-        })
+        Program::from_source(display, VERTEX_SHADER, fragment_shader.as_str(), None).map_err(
+            |err| {
+                if let CompilationError(compile_error, _) = err {
+                    compile_error
+                } else {
+                    "POSSIBLE DRIVER ISSUE!".to_string()
+                }
+            },
+        )
     }
 }
 
@@ -172,12 +197,12 @@ impl ApplicationHandler for SEPLApp {
                     self.state.program = program;
                     self.window.request_redraw();
                     println!("Refreshed program");
-                },
+                }
                 Err(err) => {
                     self.last_error = err;
                     // TODO: actually use the saved value in a UI
                     eprintln!("[SEPL-ERROR] {}", self.last_error);
-                },
+                }
             }
         }
 
@@ -193,7 +218,7 @@ impl ApplicationHandler for SEPLApp {
                 match command {
                     RenderCommand::SetUniform(name, uniform_value) => {
                         self.state.uniforms.insert(name, uniform_value);
-                    },
+                    }
                 }
             }
         }
@@ -206,7 +231,12 @@ impl ApplicationHandler for SEPLApp {
                 self.display.resize(new_size.into());
 
                 if let Some(sender) = &self.state_update_commands {
-                    sender.send(StateUpdateCommand::ScreenSizeChanged(new_size.width, new_size.height)).unwrap();
+                    sender
+                        .send(StateUpdateCommand::ScreenSizeChanged(
+                            new_size.width,
+                            new_size.height,
+                        ))
+                        .unwrap();
                 }
             }
             glium::winit::event::WindowEvent::RedrawRequested => {
@@ -214,15 +244,17 @@ impl ApplicationHandler for SEPLApp {
                 for (name, value) in &self.state.uniforms {
                     dynamic_uniforms.add(name.as_str(), value);
                 }
-                
+
                 let mut frame = self.display.draw();
-                frame.draw(
-                    &self.state.vertex_buffer,
-                    &self.state.index_buffer,
-                    &self.state.program,
-                    &dynamic_uniforms,
-                    &DrawParameters::default(),
-                ).expect("Could not draw frame");
+                frame
+                    .draw(
+                        &self.state.vertex_buffer,
+                        &self.state.index_buffer,
+                        &self.state.program,
+                        &dynamic_uniforms,
+                        &DrawParameters::default(),
+                    )
+                    .expect("Could not draw frame");
 
                 frame.finish().expect("Could not switch framebuffers");
                 self.display.flush();
