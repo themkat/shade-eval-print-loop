@@ -383,23 +383,30 @@ mod tests {
 
         assert!(!testharness.state.prev_was_error);
         // TODO: float rounding errors?
-        assert_eq!(Ok(RenderCommand::SetUniform("some_matrix".to_string(),
-                                                UniformValue::Matrix(Matrix4::from_row_slice(&[0.0, 1.0, 2.0, 3.0,
-                                                                                               4.0, 5.0, 6.0, 7.0,
-                                                                                               8.0, 9.0, 10.0, 11.0,
-                                                                                               12.0, 13.0, 14.0, 15.0])))), command);
+        assert_eq!(
+            Ok(RenderCommand::SetUniform(
+                "some_matrix".to_string(),
+                UniformValue::Matrix(Matrix4::from_row_slice(&[
+                    0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0,
+                    15.0
+                ]))
+            )),
+            command
+        );
     }
 
     #[test]
     fn screen_size_state_update_test() {
         let mut testharness = TestHarness::new();
 
-        testharness.state_sender.send(StateUpdateCommand::ScreenSizeChanged(250, 820)).unwrap();
+        testharness
+            .state_sender
+            .send(StateUpdateCommand::ScreenSizeChanged(250, 820))
+            .unwrap();
 
         let result = testharness.state.eval("(screen-size)".to_string());
         assert!(!testharness.state.prev_was_error);
         // no cons cells, so list instead
         assert_eq!("(250 820)\n".to_string(), result);
-        
     }
 }
