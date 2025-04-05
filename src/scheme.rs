@@ -262,8 +262,6 @@ impl Display for Matrix {
 }
 
 
-// TODO: maybe have a method to get values updated since last call?
-
 
 
 // functions exposed from scheme
