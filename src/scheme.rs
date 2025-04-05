@@ -261,9 +261,6 @@ impl Display for Matrix {
     }
 }
 
-
-
-
 // functions exposed from scheme
 // TODO: get-elapsed-time-seconds etc.
 //       set-uniform!
