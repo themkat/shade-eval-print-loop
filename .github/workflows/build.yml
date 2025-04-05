@@ -1,0 +1,28 @@
+name: Build and test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: clippy, rustfmt
+      - name: Check if formatted correctly
+        run: |
+          cargo fmt --check
+      - name: Check if code builds correctly
+        run: |
+          cargo check
+      - name: Run tests
+        run: |
+          cargo test
+      # - name: Static code analysis with clippy
+      #   run: |
+      #     cargo clippy --all -- -D warnings
