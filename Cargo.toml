@@ -4,7 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+approx = "0.5.1"
 glium = "0.36.0"
+image = "0.25.6"
 nalgebra = "0.33.2"
 notify = "8.0.0"
 steel-core = { git="https://github.com/mattwparas/steel.git", branch = "master" }
