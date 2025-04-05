@@ -351,7 +351,6 @@ mod tests {
             result
         );
     }
-    }
 
     #[test]
     fn uniform_value_test() {
