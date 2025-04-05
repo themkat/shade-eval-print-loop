@@ -26,40 +26,36 @@ pub struct NetworkScheme {
 impl NetworkScheme {
 
     // TODO: how to handle inputs and outputs better? Let the "user site" construct a NetworkScheme instance and call main loop on it maybe?
-    /// The only user facing function. Starts a network process and runs the main loop in its own thread.
-    pub fn main_loop() {
-        // thread::spawn(|| {
-        //     let mut state = Self::new_env();
-
-        //     let listener = TcpListener::bind("127.0.0.1:42069").expect("Could not bind to port 42069!");
+    /// The only user facing function. Starts a network process and runs the main loop. Blocks, so recommended to run this in its own thread.
+    pub fn main_loop(mut self) {
+        let listener = TcpListener::bind("127.0.0.1:42069").expect("Could not bind to port 42069!");
     
-        //     for stream in listener.incoming() {
+        for stream in listener.incoming() {
                 
-        //         if let Ok(mut stream) = stream {
-        //             let mut reader = BufReader::new(stream.try_clone().unwrap());
-
-        //             // TODO: maybe allow multiple requests instead of blocking on first connection? Reconnects etc. might be messy here
-        //             loop {
-        //                 // write prompt
-        //                 stream.write_all(b"> ").unwrap();
+            if let Ok(mut stream) = stream {
+                let mut reader = BufReader::new(stream.try_clone().unwrap());
+                
+                // TODO: maybe allow multiple requests instead of blocking on first connection? Reconnects etc. might be messy here
+                loop {
+                    // write prompt
+                    stream.write_all(b"> ").unwrap();
+                    
+                    let mut buffer = String::new();
+                    if let Ok(bytes_read) = reader.read_line(&mut buffer) {
                         
-        //                 let mut buffer = String::new();
-        //                 if let Ok(bytes_read) = reader.read_line(&mut buffer) {
-                            
-        //                     if bytes_read == 0 {
-        //                         continue;
-        //                     }
-                            
-        //                     // run the command
-        //                     let result = state.eval(buffer);
-        //                     stream.write_all(&result.into_bytes()).unwrap();
-                            
-        //                     stream.flush().unwrap();
-        //                 }
-        //             }
-        //         }
-        //     }
-        // });
+                        if bytes_read == 0 {
+                            continue;
+                        }
+                        
+                        // run the command
+                        let result = self.eval(buffer);
+                        stream.write_all(&result.into_bytes()).unwrap();
+                        
+                        stream.flush().unwrap();
+                    }
+                }
+            }
+        }
     }
 
     // TODO: maybe an initializer method for create scheme env?
@@ -70,7 +66,7 @@ impl NetworkScheme {
     
     // TODO: a method for repl loop? (for each connection?) should we support multiple in parallel?
 
-    fn new_env(input_port: Receiver<Command>,
+    pub fn new_env(input_port: Receiver<Command>,
                output_port: Sender<RenderCommand>) -> Self {
         let mut scheme_vm = Engine::new(); 
 
