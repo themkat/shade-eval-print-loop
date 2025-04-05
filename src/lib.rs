@@ -42,7 +42,8 @@ pub fn init() {
         let scheme = NetworkScheme::new_env(receiver, render_sender);
         scheme.main_loop();
     });
-    
+
+    app.set_render_command_receiver(render_receiver);
     event_loop.run_app(&mut app).expect("Could not run app");
 }
 
