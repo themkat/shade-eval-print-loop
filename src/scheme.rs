@@ -280,6 +280,7 @@ impl Display for Matrix {
 mod tests {
     use std::{
         sync::mpsc::{Receiver, RecvTimeoutError, Sender, channel},
+        thread,
         time::Duration,
     };
 
@@ -405,6 +406,10 @@ mod tests {
             .state_sender
             .send(StateUpdateCommand::ScreenSizeChanged(250, 820))
             .unwrap();
+
+        // TODO: sometimes flaky on GA. Maybe I could use a fixed size sync_channel instead?
+        // sleep two seconds for the background thread to possibly catch up
+        thread::sleep(Duration::from_secs(2));
 
         let result = testharness.state.eval("(screen-size)".to_string());
         assert!(!testharness.state.prev_was_error);
