@@ -162,7 +162,7 @@ impl NetworkScheme {
                 // we are only interested in the last evaluated expression.
                 // no need to print all of them.
                 // Void is also a SteelVal type :)
-                let result = return_value.last().unwrap();
+                let result = return_value.last().unwrap_or(&SteelVal::Void);
 
                 // Ugly hack to use our own Display implementations for custom types
                 // TODO: refactor with match
