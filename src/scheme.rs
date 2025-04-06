@@ -7,6 +7,7 @@ use std::{
         mpsc::{Receiver, Sender},
     },
     thread,
+    time::Instant,
 };
 
 use nalgebra::{Matrix4, RowVector4};
@@ -89,6 +90,7 @@ impl NetworkScheme {
         output_port: Sender<RenderCommand>,
     ) -> Self {
         let mut scheme_vm = Engine::new();
+        let start_time = Instant::now();
 
         scheme_vm.register_fn("set-uniform!", move |name: String, value: SteelVal| {
             // TODO: better error handling!
@@ -116,6 +118,11 @@ impl NetworkScheme {
         // TODO: should we support other matrices than 4x4?
         scheme_vm.register_type::<Matrix>("matrix?");
         scheme_vm.register_fn("matrix", Matrix::new);
+
+        // get the elapsed time in seconds (floating point)
+        scheme_vm.register_fn("get-elapsed-time", move || {
+            (Instant::now() - start_time).as_secs_f32()
+        });
 
         // TODO: setup a standard library
         // TODO: matrix loaders like perspective, lookAt etc. useful for prototyping
