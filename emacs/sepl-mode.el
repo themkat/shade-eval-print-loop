@@ -1,12 +1,36 @@
+(require 's)
+
+(defun sepl-eval-sexp ()
+  (interactive)
+  (let* ((start (point))
+         (end (save-excursion
+                (backward-sexp)
+                (point)))
+         ;; sepl requires single lines
+         (code (s-replace "\n" " " (buffer-substring start end))))
+    (when (boundp 'sepl-repl-process)
+      ;; TODO: how to get a response in the minibuffer?
+      (comint-send-string sepl-repl-process code))))
+
+(defun sepl-eval-buffer ()
+  (interactive)
+  (when (boundp 'sepl-repl-process)
+    (comint-send-string sepl-repl-process
+                        (s-replace "\n" " " (buffer-string)))))
+
+(defvar sepl-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-x C-e") 'sepl-eval-sexp)
+    map))
+
 ;; Mode that connects to the existing sepl process.
 ;; Sets up hotkeys for evaluation of expressions. 
 (define-derived-mode sepl-mode scheme-mode
   "SEPL - Scheme code"
   "Scheme code that we can evaluate in SEPL."
-  )
 
-;; TODO: maybe a function for starting the program, directly from Emacs?
-;;       then we can automatically start the repl and just connect from scheme processes?
+  (set (make-local-variable 'sepl-repl-process)
+       (get-buffer-process "*SEPL REPL*")))
 
 ;; TODO: maybe some sort of error message if we try to start two proceses? Only one allowed at the moment. To make life simpler for myself. 
 (define-derived-mode sepl-repl-mode comint-mode
@@ -42,7 +66,9 @@
     ;; TODO: open the comint buffer in a split.
     ;; TODO: setup the special mode for the buffer.
     ;;    
-    (apply 'make-comint-in-buffer "SEPL" buffer '("localhost" . 42069) nil '())))
+    (with-current-buffer buffer
+      (apply 'make-comint-in-buffer "SEPL" buffer '("localhost" . 42069) nil '())
+      (sepl-repl-mode))))
 
 
 ;; TODO: some keywords we cna 
