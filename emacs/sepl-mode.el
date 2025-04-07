@@ -1,5 +1,7 @@
 (require 's)
 
+;; TODO: make a sepl-send-command-to-process or something that all eval style funcs can use
+
 (defun sepl-eval-sexp ()
   (interactive)
   (let* ((start (point))
@@ -7,10 +9,16 @@
                 (backward-sexp)
                 (point)))
          ;; sepl requires single lines
-         (code (s-replace "\n" " " (buffer-substring start end))))
+         (code (s-replace "\n" " " (buffer-substring start end)))
+         (tmp-buf (get-buffer-create "*sepl-tmp-buf*"))
+         (process))
     (when (boundp 'sepl-repl-process)
-      ;; TODO: how to get a response in the minibuffer?
-      (comint-send-string sepl-repl-process code))))
+      (comint-redirect-send-command-to-process code tmp-buf sepl-repl-process nil t)
+      (with-current-buffer tmp-buf
+        ;; hack to wait for output to be present in tmp buffer
+        (sleep-for 0.1)
+        (message "=> %s" (s-trim (buffer-string)))))
+    (kill-buffer tmp-buf)))
 
 (defun sepl-eval-buffer ()
   (interactive)
