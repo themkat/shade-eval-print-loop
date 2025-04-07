@@ -17,7 +17,7 @@
       (with-current-buffer tmp-buf
         ;; hack to wait for output to be present in tmp buffer
         (sleep-for 0.1)
-        (message "=> %s" (s-trim (buffer-string)))))
+        (message "=> %s" (s-replace "\n" "\n   " (s-trim (buffer-string))))))
     (kill-buffer tmp-buf)))
 
 (defun sepl-eval-buffer ()
