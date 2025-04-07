@@ -46,8 +46,9 @@
   "Mode used inside the repl to the SEPL process. Dr. Seuss would be proud."
 
   ;; TODO: rest of the buffer should be read only, except the prompt
-  ;; (setq-local comint-use-prompt-regexp t
-  ;;             comint-prompt-regexp "> ")
+  (setq-local comint-use-prompt-regexp t
+              comint-prompt-regexp "> "
+              comint-prompt-read-only t)
 
   ;; TODO: could we activate highlight of scheme keywords?
   (require 'scheme)
