@@ -78,13 +78,6 @@ impl NetworkScheme {
         }
     }
 
-    // TODO: maybe an initializer method for create scheme env?
-    //       to setup our "standard library" etc.
-    //       + any types we may want to use
-    // TODO: any way we can support matrix multiplication in scheme?
-
-    // TODO: a method for repl loop? (for each connection?) should we support multiple in parallel?
-
     pub fn new_env(
         input_port: Receiver<StateUpdateCommand>,
         output_port: Sender<RenderCommand>,
@@ -113,6 +106,14 @@ impl NetworkScheme {
                 .unwrap();
             Ok(())
         });
+
+        // dynamic uniform
+        // defining a global variable, which seems to be the easiest way while avoiding ownership and thread deadlocks.
+        // TODO: prettify so code is easier to read
+        scheme_vm
+            .run("(define DYNAMIC_UNIFORM_TABLE (hash))".to_string())
+            .expect("Could should NOT fail");
+        scheme_vm.run("(define (set-dynamic-uniform! name func) (set! DYNAMIC_UNIFORM_TABLE (hash-insert DYNAMIC_UNIFORM_TABLE name func)))".to_string()).expect("Could should NOT fail");
 
         // standard library matrix functions
         // TODO: should we support other matrices than 4x4?
@@ -192,6 +193,36 @@ impl NetworkScheme {
             }
         }
     }
+
+    /// Runs one iteration of dynamic updates. Meant to be used in a loop and called regularly.
+    fn run_dynamic_updates(&mut self) -> Result<(), String> {
+        let dynamic_uniform_table = self
+            .scheme_vm
+            .extract::<HashMap<String, SteelVal>>("DYNAMIC_UNIFORM_TABLE")
+            .expect("table should always exist");
+
+        for (name, val) in &dynamic_uniform_table {
+            if let SteelVal::Closure(_) = val {
+                // TODO: better error handling here.. Lots of internal methods used. Electric bogaloo
+                let result = self
+                    .scheme_vm
+                    .call_function_with_args(val.clone(), vec![])
+                    .unwrap();
+                self.scheme_vm
+                    .call_function_by_name_with_args(
+                        "set-uniform!",
+                        vec![name.clone().into_steelval().unwrap(), result],
+                    )
+                    .unwrap();
+            } else {
+                return Err(
+                    "Second argument to set-dynamic-uniform! should be a lambda.".to_string(),
+                );
+            }
+        }
+
+        Ok(())
+    }
 }
 
 // Custom types to let me define Display trait and custom operations
@@ -267,13 +298,6 @@ impl Display for Matrix {
         )
     }
 }
-
-// functions exposed from scheme
-// TODO: get-elapsed-time-seconds etc.
-//       set-uniform!
-//       set-dynamic-uniform! with lambda
-// how should a dynamic uniform work? :O timer? just called each iteration? we could collect a hashmap of dynamic values and send uniform commands each iteration
-// (make yet another thread for that to happen?)
 
 /// Tests for any extensions the networked scheme adds to its environment.
 #[cfg(test)]
@@ -416,4 +440,32 @@ mod tests {
         // no cons cells, so list instead
         assert_eq!("(250 820)\n".to_string(), result);
     }
+
+    #[test]
+    fn dynamic_uniform_float_test() {
+        let mut testharness = TestHarness::new();
+
+        testharness.state.eval("(define global-val 1.0)
+                                (set-dynamic-uniform! \"my-uniform\" (lambda () (set! global-val (+ global-val 2.0)) global-val))".to_string());
+
+        assert!(!testharness.state.prev_was_error);
+
+        // run a single iteration of dynamic updates
+        testharness.state.run_dynamic_updates().unwrap();
+
+        let event = testharness.get_last_event();
+        assert_eq!(
+            Ok(RenderCommand::SetUniform(
+                "my-uniform".to_string(),
+                UniformValue::Float(3.0)
+            )),
+            event
+        )
+    }
+
+    // TODO: ints! There is some handling of plain integers. Useful in some situations in glsl
+
+    // TODO: maybe make some rules for dynamic uniforms to avoid too many pitfalls...
+    //       maybe time limit or detection for if stuck?
+    //    - arguments == 0, only that allowed
 }
