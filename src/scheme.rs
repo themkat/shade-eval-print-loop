@@ -134,6 +134,27 @@ impl NetworkScheme {
                     name.clone(),
                     match value {
                         SteelVal::NumV(num) => UniformValue::Float(num as f32),
+                        SteelVal::ListV(list) => {
+                            // TODO: make prettier. This is fucking ugly
+                            let all_nums: Vec<Option<f32>> = list
+                                .iter()
+                                .map(|elem| match elem {
+                                    SteelVal::NumV(num) => Some(*num as f32),
+                                    _ => None,
+                                })
+                                .collect();
+                            if all_nums.len() == 3 && all_nums.iter().all(|elem| elem.is_some()) {
+                                UniformValue::Vector3(
+                                    all_nums[0].unwrap(),
+                                    all_nums[1].unwrap(),
+                                    all_nums[2].unwrap(),
+                                )
+                            } else {
+                                return Err(
+                                    "uniform only support coercing 3 element lists to vec3",
+                                );
+                            }
+                        }
                         SteelVal::Custom(val) => {
                             if let Some(matrix) = val.borrow().as_any_ref().downcast_ref::<Matrix>()
                             {
@@ -437,6 +458,27 @@ mod tests {
             Ok(RenderCommand::SetUniform(
                 "my_pi".to_string(),
                 UniformValue::Float(3.14)
+            )),
+            command
+        );
+    }
+
+    #[test]
+    fn uniform_vec3_test() {
+        // 3 element float lists should be coerced into vec3 in glsl
+        let mut testharness = TestHarness::new();
+
+        testharness
+            .state
+            .eval("(set-uniform! \"my_vec\" '(1.0 2.0 4.0))".to_string());
+
+        let command = testharness.get_last_event();
+        assert!(!testharness.state.prev_was_error);
+        // TODO: float rounding errors?
+        assert_eq!(
+            Ok(RenderCommand::SetUniform(
+                "my_vec".to_string(),
+                UniformValue::Vector3(1.0, 2.0, 4.0)
             )),
             command
         );
