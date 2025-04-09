@@ -1,10 +1,11 @@
 use std::{
+    collections::HashMap,
     fmt::Display,
     io::{BufRead, BufReader, Write},
     net::TcpListener,
     sync::{
         Arc, Mutex,
-        mpsc::{Receiver, Sender},
+        mpsc::{Receiver, Sender, channel},
     },
     thread,
     time::Instant,
@@ -12,9 +13,9 @@ use std::{
 
 use nalgebra::{Matrix4, RowVector4};
 use steel::{
-    SteelErr, SteelVal,
-    gc::ShareableMut,
+    SteelVal,
     parser::ast::IteratorExtensions,
+    rvals::IntoSteelVal,
     steel_vm::{engine::Engine, register_fn::RegisterFn},
 };
 use steel_derive::Steel;
@@ -47,32 +48,68 @@ pub struct NetworkScheme {
 // TODO: should probably have a way to get data from the program as well? key strokes etc. maybe also some status on rendering we can fiddle with in scheme?
 
 impl NetworkScheme {
-    // TODO: how to handle inputs and outputs better? Let the "user site" construct a NetworkScheme instance and call main loop on it maybe?
     /// The only user facing function. Starts a network process and runs the main loop. Blocks, so recommended to run this in its own thread.
     pub fn main_loop(mut self) {
-        let listener = TcpListener::bind("127.0.0.1:42069").expect("Could not bind to port 42069!");
+        // input and output ports for the repl thread
+        let repl_channels: Arc<Mutex<Vec<(Receiver<String>, Sender<String>)>>> =
+            Arc::new(Mutex::new(Vec::new()));
 
-        for stream in listener.incoming() {
-            if let Ok(mut stream) = stream {
-                let mut reader = BufReader::new(stream.try_clone().unwrap());
+        {
+            let repl_channels = Arc::clone(&repl_channels);
+            thread::spawn(move || {
+                let listener =
+                    TcpListener::bind("127.0.0.1:42069").expect("Could not bind to port 42069!");
 
-                // TODO: maybe allow multiple requests instead of blocking on first connection? Reconnects etc. might be messy here
-                loop {
-                    // write prompt
-                    stream.write_all(b"> ").unwrap();
+                for stream in listener.incoming() {
+                    if let Ok(mut stream) = stream {
+                        // create a command port to send to the repl
+                        let (repl_input_sender, repl_input_receiver) = channel();
+                        let (repl_output_sender, repl_output_receiver) = channel();
 
-                    let mut buffer = String::new();
-                    if let Ok(bytes_read) = reader.read_line(&mut buffer) {
-                        if bytes_read == 0 {
-                            continue;
+                        {
+                            repl_channels
+                                .lock()
+                                .unwrap()
+                                .push((repl_input_receiver, repl_output_sender));
                         }
 
-                        // run the command
-                        let result = self.eval(buffer);
-                        stream.write_all(&result.into_bytes()).unwrap();
+                        let mut reader = BufReader::new(stream.try_clone().unwrap());
 
-                        stream.flush().unwrap();
+                        // TODO: maybe allow multiple requests instead of blocking on first connection? Reconnects etc. might be messy here
+                        loop {
+                            // write prompt
+                            stream.write_all(b"> ").unwrap();
+
+                            let mut buffer = String::new();
+                            if let Ok(bytes_read) = reader.read_line(&mut buffer) {
+                                if bytes_read == 0 {
+                                    continue;
+                                }
+
+                                // run the command
+                                repl_input_sender.send(buffer).unwrap();
+                                let result = repl_output_receiver.recv().unwrap();
+
+                                //let result = self.eval(buffer);
+                                stream.write_all(&result.into_bytes()).unwrap();
+
+                                stream.flush().unwrap();
+                            }
+                        }
                     }
+                }
+            });
+        }
+
+        // TODO: loop where we handle events.
+        let mut prev_time = Instant::now();
+        loop {
+            // TODO: update dynamic uniforms
+
+            for (input, output) in repl_channels.lock().unwrap().iter() {
+                if let Ok(msg) = input.try_recv() {
+                    let result = self.eval(msg);
+                    output.send(result).unwrap();
                 }
             }
         }
