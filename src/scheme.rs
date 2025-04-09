@@ -66,6 +66,7 @@ impl NetworkScheme {
                         let (repl_input_sender, repl_input_receiver) = channel();
                         let (repl_output_sender, repl_output_receiver) = channel();
 
+                        // Add our own communication channels to the REPLs list of users
                         {
                             repl_channels
                                 .lock()
@@ -101,10 +102,14 @@ impl NetworkScheme {
             });
         }
 
-        // TODO: loop where we handle events.
+        // main thread repl and dynamic updates loop
         let mut prev_time = Instant::now();
         loop {
-            // TODO: update dynamic uniforms
+            // TODO: tunable interval for older computers?
+            if (Instant::now() - prev_time).as_millis() >= 50 {
+                self.run_dynamic_updates().unwrap();
+                prev_time = Instant::now();
+            }
 
             for (input, output) in repl_channels.lock().unwrap().iter() {
                 if let Ok(msg) = input.try_recv() {
