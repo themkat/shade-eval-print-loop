@@ -91,6 +91,7 @@ impl AsUniformValue for command::UniformValue {
     fn as_uniform_value(&self) -> UniformValue<'_> {
         match self {
             command::UniformValue::Float(num) => UniformValue::Float(*num),
+            command::UniformValue::Vector3(x, y, z) => UniformValue::Vec3([*x, *y, *z]),
             command::UniformValue::Matrix(matrix) => {
                 let matrix: [[f32; 4]; 4] = (*matrix).into();
                 UniformValue::Mat4(matrix)
