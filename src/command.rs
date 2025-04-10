@@ -6,6 +6,7 @@ use nalgebra::Matrix4;
 #[derive(Debug, PartialEq)]
 pub enum UniformValue {
     Float(f32),
+    Vector3(f32, f32, f32),
     Matrix(Matrix4<f32>),
     // TODO: other types
     // Texture1D?
