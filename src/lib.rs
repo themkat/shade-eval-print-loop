@@ -81,8 +81,6 @@ struct GLState {
     vertex_buffer: VertexBuffer<Vertex>,
     index_buffer: NoIndices,
     program: Program,
-    // TODO: what lifetimes should we give these....
-    //uniforms: DynamicUniforms<'a, 'a>,
     uniforms: HashMap<String, command::UniformValue>,
 }
 
