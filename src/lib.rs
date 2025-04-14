@@ -197,12 +197,12 @@ impl ApplicationHandler for SEPLApp {
                 Ok(program) => {
                     self.state.program = program;
                     self.window.request_redraw();
-                    println!("Refreshed program");
+                    println!("[INFO]Refreshed program");
                 }
                 Err(err) => {
                     self.last_error = err;
                     // TODO: actually use the saved value in a UI
-                    eprintln!("[SEPL-ERROR] {}", self.last_error);
+                    eprintln!("[ERROR] {}", self.last_error);
                 }
             }
         }
@@ -215,7 +215,6 @@ impl ApplicationHandler for SEPLApp {
         // TODO: check if there are better ways to implement this
         if let Some(receiver) = &self.render_commands {
             if let Ok(command) = receiver.try_recv() {
-                println!("Received event!");
                 match command {
                     RenderCommand::SetUniform(name, uniform_value) => {
                         self.state.uniforms.insert(name, uniform_value);
