@@ -1,6 +1,6 @@
 use glium::{
     Blend, DrawParameters, Program, Surface, Texture2d, VertexBuffer, backend::Facade,
-    glutin::api::cgl::display, index::NoIndices, uniform,
+    index::NoIndices, uniform,
 };
 use rusttype::{Font, Scale, point};
 
@@ -84,8 +84,7 @@ impl TextRenderer {
             if let Some(bounding_box) = glyph.pixel_bounding_box() {
                 glyph.draw(|x, y, v| {
                     result[(bounding_box.min.y as u32 + y) as usize]
-                        [(bounding_box.min.x as u32 + x) as usize] =
-                        (255, 0, 255, (v * 255.0) as u8);
+                        [(bounding_box.min.x as u32 + x) as usize] = (255, 0, 0, (v * 255.0) as u8);
                 });
             }
         }
@@ -95,15 +94,14 @@ impl TextRenderer {
 
     /// Render text and return a byte array that can easily be converted to a 2D texture
     pub fn render_text<T: Facade, S: Surface>(&mut self, display: &T, surface: &mut S, text: &str) {
-        // if Some(text) != self.prev_text {
-        //     // TODO: create texture
-
-        //     self.prev_text = Some(text.clone());
-        // }
+        if Some(text.to_string()) != self.prev_text {
+            let texture = self.render_text_to_texture(display, text);
+            self.prev_texture = Some(texture);
+            self.prev_text = Some(text.to_string());
+        }
 
         // we know at this point that there should always be a texture present
-        // TODO: cannot move out of shared reference :( hmm...
-        let texture = self.render_text_to_texture(display, text);
+        let texture = self.prev_texture.as_ref().unwrap();
 
         surface.draw(&self.vertex_buffer, &self.index_buffer, &self.program, &uniform! {
             font_texture: texture.sampled().magnify_filter(glium::uniforms::MagnifySamplerFilter::Linear).minify_filter(glium::uniforms::MinifySamplerFilter::Linear)
