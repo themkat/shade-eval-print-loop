@@ -44,7 +44,7 @@ impl TextRenderer {
         }
     }
 
-    pub fn render_text_to_texture<T: Facade>(&self, display: &T, text: &str) -> Texture2d {
+    fn render_text_to_texture<T: Facade>(&self, display: &T, text: &str) -> Texture2d {
         let scale = Scale::uniform(32.0);
         let glyphs = self.font.layout(text, scale, point(20.0, 20.0));
 
@@ -65,7 +65,7 @@ impl TextRenderer {
         Texture2d::new(display, result).unwrap()
     }
 
-    /// Render text and return a byte array that can easily be converted to a 2D texture
+    /// Render text to the specified surface.
     pub fn render_text<T: Facade, S: Surface>(&mut self, display: &T, surface: &mut S, text: &str) {
         if Some(text.to_string()) != self.prev_text {
             let texture = self.render_text_to_texture(display, text);
