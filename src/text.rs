@@ -35,7 +35,7 @@ impl TextRenderer {
         let index_buffer = NoIndices(glium::index::PrimitiveType::TriangleStrip);
 
         Self {
-            font: Font::try_from_bytes(include_bytes!("../fonts/OpenSans-bold.ttf")).unwrap(),
+            font: Font::try_from_bytes(include_bytes!("../fonts/OpenSans-Bold.ttf")).unwrap(),
             program,
             vertex_buffer,
             index_buffer,
