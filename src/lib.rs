@@ -12,7 +12,7 @@ use geometry::{SQUARE, Vertex};
 use glium::{
     Display, DrawParameters, Program,
     ProgramCreationError::CompilationError,
-    Surface, VertexBuffer,
+    Surface, Texture2d, VertexBuffer,
     backend::{Facade, glutin::SimpleWindowBuilder},
     glutin::surface::WindowSurface,
     index::NoIndices,
@@ -21,10 +21,12 @@ use glium::{
 };
 use notify::{Event, Watcher};
 use scheme::NetworkScheme;
+use text::TextRenderer;
 
 mod command;
 mod geometry;
 mod scheme;
+mod text;
 
 const VERTEX_SHADER: &str = "#version 330 core
 
@@ -65,7 +67,6 @@ pub fn init() {
 struct SEPLApp {
     display: Display<WindowSurface>,
     window: Window,
-    last_error: String,
     input_file: String,
     input_file_watcher: Box<dyn Watcher>,
     input_file_events: Receiver<Result<Event, notify::Error>>,
@@ -75,6 +76,9 @@ struct SEPLApp {
     state_update_commands: Option<Sender<StateUpdateCommand>>,
 
     state: GLState,
+
+    text_renderer: TextRenderer,
+    last_error: Option<String>,
 }
 
 struct GLState {
@@ -122,6 +126,8 @@ impl SEPLApp {
             )
             .expect("Could not create file watcher");
 
+        let text_renderer = TextRenderer::new(&display);
+
         // fallback initially to a placeholder if compilation error
         let mut program = Self::create_program(&display, fragment_shader_file.as_str());
         let mut last_error = String::new();
@@ -135,10 +141,10 @@ impl SEPLApp {
         Self {
             window,
             display,
-            last_error,
             input_file: fragment_shader_file,
             input_file_events: receiver,
             input_file_watcher: Box::new(input_file_watcher),
+
             render_commands: None,
             state_update_commands: None,
             state: GLState {
@@ -148,6 +154,8 @@ impl SEPLApp {
                     .expect("If this fails, it will be the end of Europe as we know it"),
                 uniforms: HashMap::new(),
             },
+            text_renderer,
+            last_error: None,
         }
     }
 
@@ -193,20 +201,17 @@ impl ApplicationHandler for SEPLApp {
             //       maybe move to own method? that way we can keep this render method as clean as possible
             match program {
                 Ok(program) => {
+                    self.last_error = None;
                     self.state.program = program;
                     self.window.request_redraw();
                     println!("[INFO]Refreshed program");
                 }
                 Err(err) => {
-                    self.last_error = err;
-                    // TODO: actually use the saved value in a UI
-                    eprintln!("[ERROR] {}", self.last_error);
+                    self.last_error = Some(err.clone());
+                    eprintln!("[ERROR] {}", err);
                 }
             }
         }
-
-        // TODO: present compilation errors somewhere
-        //       egui? that opens up possibilities for user configured GUIs?
 
         // look for events received
         // process one at a time to avoid clogging render loop
@@ -253,6 +258,11 @@ impl ApplicationHandler for SEPLApp {
                         &DrawParameters::default(),
                     )
                     .expect("Could not draw frame");
+
+                if let Some(err) = &self.last_error {
+                    self.text_renderer
+                        .render_text(&self.display, &mut frame, err);
+                }
 
                 frame.finish().expect("Could not switch framebuffers");
                 self.display.flush();
