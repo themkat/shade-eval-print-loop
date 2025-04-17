@@ -107,6 +107,9 @@ impl TextRenderer {
 
         surface.draw(&self.vertex_buffer, &self.index_buffer, &self.program, &uniform! {
             font_texture: texture.sampled().magnify_filter(glium::uniforms::MagnifySamplerFilter::Linear).minify_filter(glium::uniforms::MinifySamplerFilter::Linear)
-        }, &Default::default()).expect("Could not draw text to screen");
+        }, &DrawParameters {
+            blend: Blend::alpha_blending(),
+            ..Default::default()
+        }).expect("Could not draw text to screen");
     }
 }
