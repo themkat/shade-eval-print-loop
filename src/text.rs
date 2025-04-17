@@ -6,36 +6,9 @@ use rusttype::{Font, Scale, point};
 
 use crate::geometry::{SQUARE, Vertex};
 
-const TEXT_RENDER_VERTEX_SHADER: &str = "#version 330 core
+const TEXT_RENDER_VERTEX_SHADER: &str = include_str!("../shaders/pass_text.vert");
 
-in vec2 position;
-
-out vec2 uv;
-
-void main() {
-  gl_Position = vec4(position, 0.0, 1.0);
-  uv = (position + 1.0) / 2.0;
-  // invert v
-  uv.y = 1.0 - uv.y;
-}";
-
-const TEXT_RENDER_FRAGMENT_SHADER: &str = "#version 330 core
-
-in vec2 uv;
-out vec4 color;
-
-uniform sampler2D font_texture;
-
-void main() {
-  vec4 font_color = texture(font_texture, uv);
-
-  if (font_color.a <= 0.0) {
-    discard;
-  }
-
-  color = font_color;
-}
-";
+const TEXT_RENDER_FRAGMENT_SHADER: &str = include_str!("../shaders/text.frag");
 
 pub struct TextRenderer {
     font: Font<'static>,
