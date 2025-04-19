@@ -1,6 +1,6 @@
 use glium::{
     Blend, DrawParameters, Program, Surface, Texture2d, VertexBuffer, backend::Facade,
-    index::NoIndices, uniform,
+    index::NoIndices, uniform, uniforms::EmptyUniforms,
 };
 use rusttype::{Font, Scale, point};
 
@@ -10,10 +10,14 @@ const TEXT_RENDER_VERTEX_SHADER: &str = include_str!("../shaders/pass_text.vert"
 
 const TEXT_RENDER_FRAGMENT_SHADER: &str = include_str!("../shaders/text.frag");
 
+const SOLID_PLANE_VERTEX_SHADER: &str = include_str!("../shaders/pass.vert");
+
+const SOLID_PLANE_FRAGMENT_SHADER: &str = include_str!("../shaders/solid.frag");
+
 pub struct TextRenderer {
     font: Font<'static>,
-    // TODO: consider re-using the GLState struct
     program: Program,
+    solid_background_program: Program,
     vertex_buffer: VertexBuffer<Vertex>,
     index_buffer: NoIndices,
 
@@ -31,12 +35,21 @@ impl TextRenderer {
             None,
         )
         .unwrap();
+        let solid_background_program = Program::from_source(
+            display,
+            SOLID_PLANE_VERTEX_SHADER,
+            SOLID_PLANE_FRAGMENT_SHADER,
+            None,
+        )
+        .expect("Could not create program for solid square of fixed color.");
+
         let vertex_buffer = VertexBuffer::new(display, &SQUARE).unwrap();
         let index_buffer = NoIndices(glium::index::PrimitiveType::TriangleStrip);
 
         Self {
             font: Font::try_from_bytes(include_bytes!("../fonts/OpenSans-Bold.ttf")).unwrap(),
             program,
+            solid_background_program,
             vertex_buffer,
             index_buffer,
             prev_text: None,
@@ -72,6 +85,20 @@ impl TextRenderer {
             self.prev_texture = Some(texture);
             self.prev_text = Some(text.to_string());
         }
+
+        // solid plane to make text pop out more if the user have an active fragment shader
+        surface
+            .draw(
+                &self.vertex_buffer,
+                &self.index_buffer,
+                &self.solid_background_program,
+                &EmptyUniforms,
+                &DrawParameters {
+                    blend: Blend::alpha_blending(),
+                    ..Default::default()
+                },
+            )
+            .expect("Could not draw solid plane");
 
         // we know at this point that there should always be a texture present
         let texture = self.prev_texture.as_ref().unwrap();
