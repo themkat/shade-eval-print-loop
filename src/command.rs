@@ -1,6 +1,6 @@
 //! Command structures to standardize and simplify sending commands and instructions between threads.
 
-use image::RgbaImage;
+use image::{Luma, RgbaImage};
 use nalgebra::Matrix4;
 
 #[derive(Debug, PartialEq)]
@@ -11,7 +11,9 @@ pub enum UniformValue {
     // TODO: other types
     // Texture1D?
     // Texture2D?
-    Texture2D(RgbaImage),
+    // TODO: what about grayscale images? Corce them into Rgba? Or is there a better way?
+    GrayScaleTexture2D(Luma<u8>),
+    RgbaTexture2D(RgbaImage),
     // etc.?
 }
 

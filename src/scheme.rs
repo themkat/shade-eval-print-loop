@@ -11,6 +11,7 @@ use std::{
     time::Instant,
 };
 
+use image::RgbaImage;
 use nalgebra::{Matrix4, RowVector4};
 use steel::{
     SteelVal,
@@ -159,6 +160,10 @@ impl NetworkScheme {
                             if let Some(matrix) = val.borrow().as_any_ref().downcast_ref::<Matrix>()
                             {
                                 UniformValue::Matrix(matrix.into())
+                            } else if let Some(texture) =
+                                val.borrow().as_any_ref().downcast_ref::<Texture>()
+                            {
+                                UniformValue::RgbaTexture2D(texture.image.clone())
                             } else {
                                 unreachable!("Should never happen")
                             }
@@ -192,6 +197,8 @@ impl NetworkScheme {
         // TODO: matrix loaders like perspective, lookAt etc. useful for prototyping
 
         // TODO: loading images from file. what should our command formats image type be based upon? DynamicImage? or just a RgbaImage with 8 bits?
+        scheme_vm.register_type::<Texture>("texture?");
+        scheme_vm.register_fn("load-texture", |filename: String| Texture::new(filename));
 
         // start a background process that listens to updates from renderer
         // TODO: maybe this setup fits better as a separate method being called in main loop?
@@ -359,6 +366,23 @@ impl Display for Matrix {
             space_separate(&self.elements[2]),
             space_separate(&self.elements[3])
         )
+    }
+}
+
+// TODO: should we have a color texture thingy? probably won't make sense to save it as a vector directly?
+/// Simple wrapper type for textures.
+#[derive(Clone, Steel)]
+struct Texture {
+    image: RgbaImage,
+}
+
+impl Texture {
+    fn new(filename: String) -> Result<Self, String> {
+        let texture = image::open(filename).map_err(|err| err.to_string())?;
+
+        Ok(Texture {
+            image: texture.to_rgba8(),
+        })
     }
 }
 
