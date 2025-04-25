@@ -182,6 +182,8 @@ impl NetworkScheme {
             .run("(define DYNAMIC_UNIFORM_TABLE (hash))".to_string())
             .expect("Could should NOT fail");
         scheme_vm.run("(define (set-dynamic-uniform! name func) (set! DYNAMIC_UNIFORM_TABLE (hash-insert DYNAMIC_UNIFORM_TABLE name func)))".to_string()).expect("Could should NOT fail");
+        // TODO: return an error if name don't exist
+        scheme_vm.run("(define (delete-dynamic-uniform! name) (set! DYNAMIC_UNIFORM_TABLE (hash-remove DYNAMIC_UNIFORM_TABLE name)))".to_string()).expect("Should NOT fail!");
 
         // standard library matrix functions
         // TODO: should we support other matrices than 4x4?
