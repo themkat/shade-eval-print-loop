@@ -177,6 +177,25 @@ impl SEPLApp {
         self.state_update_commands.replace(sender);
     }
 
+    /// Checks for file change notifications, and reloads the fragment shader if gets any. This might also change the error state of the program if the fragment shader contains any syntax errors.
+    fn reload_shader_if_file_changed(&mut self) {
+        if let Ok(_) = self.input_file_events.try_recv() {
+            let program = Self::create_program(&self.display, &self.input_file);
+            match program {
+                Ok(program) => {
+                    self.last_error = None;
+                    self.state.program = program;
+                    self.window.request_redraw();
+                    println!("[INFO]Refreshed program");
+                }
+                Err(err) => {
+                    self.last_error = Some(err.clone());
+                    eprintln!("[ERROR] {}", err);
+                }
+            }
+        }
+    }
+
     /// Read fragment shader from file, and create shader program combination. In our simplified scenario, the only reasonable error is a compilation error, so our error type is simply a String.
     fn create_program<F: Facade>(display: &F, filename: &str) -> Result<Program, String> {
         let fragment_shader =
@@ -203,25 +222,7 @@ impl ApplicationHandler for SEPLApp {
         _window: glium::winit::window::WindowId,
         event: glium::winit::event::WindowEvent,
     ) {
-        // Look for changes in files
-        if let Ok(_) = self.input_file_events.try_recv() {
-            // TODO: best way to print errors?
-            let program = Self::create_program(&self.display, &self.input_file);
-            // TODO: handle error
-            //       maybe move to own method? that way we can keep this render method as clean as possible
-            match program {
-                Ok(program) => {
-                    self.last_error = None;
-                    self.state.program = program;
-                    self.window.request_redraw();
-                    println!("[INFO]Refreshed program");
-                }
-                Err(err) => {
-                    self.last_error = Some(err.clone());
-                    eprintln!("[ERROR] {}", err);
-                }
-            }
-        }
+        self.reload_shader_if_file_changed();
 
         // look for events received
         // process one at a time to avoid clogging render loop
