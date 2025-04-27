@@ -196,38 +196,10 @@ impl SEPLApp {
         }
     }
 
-    /// Read fragment shader from file, and create shader program combination. In our simplified scenario, the only reasonable error is a compilation error, so our error type is simply a String.
-    fn create_program<F: Facade>(display: &F, filename: &str) -> Result<Program, String> {
-        let fragment_shader =
-            fs::read_to_string(filename).expect("Could not read fragment shader!");
-
-        Program::from_source(display, VERTEX_SHADER, fragment_shader.as_str(), None).map_err(
-            |err| {
-                if let CompilationError(compile_error, _) = err {
-                    compile_error
-                } else {
-                    "POSSIBLE DRIVER ISSUE!".to_string()
-                }
-            },
-        )
-    }
-}
-
-impl ApplicationHandler for SEPLApp {
-    fn resumed(&mut self, _event_loop: &glium::winit::event_loop::ActiveEventLoop) {}
-
-    fn window_event(
-        &mut self,
-        event_loop: &glium::winit::event_loop::ActiveEventLoop,
-        _window: glium::winit::window::WindowId,
-        event: glium::winit::event::WindowEvent,
-    ) {
-        self.reload_shader_if_file_changed();
-
-        // look for events received
-        // process one at a time to avoid clogging render loop
-        // TODO: check if there are better ways to implement this
+    /// Checks the input port for any incoming render commands in a non-blocking way. If there are no input port, it does nothing. Same for no commands available.
+    fn process_incoming_render_commands(&mut self) {
         if let Some(receiver) = &self.render_commands {
+            // process one at a time to avoid clogging render loop
             if let Ok(command) = receiver.try_recv() {
                 match command {
                     // Special texture handling to only handle them one time
@@ -258,6 +230,36 @@ impl ApplicationHandler for SEPLApp {
                 }
             }
         }
+    }
+
+    /// Read fragment shader from file, and create shader program combination. In our simplified scenario, the only reasonable error is a compilation error, so our error type is simply a String.
+    fn create_program<F: Facade>(display: &F, filename: &str) -> Result<Program, String> {
+        let fragment_shader =
+            fs::read_to_string(filename).expect("Could not read fragment shader!");
+
+        Program::from_source(display, VERTEX_SHADER, fragment_shader.as_str(), None).map_err(
+            |err| {
+                if let CompilationError(compile_error, _) = err {
+                    compile_error
+                } else {
+                    "POSSIBLE DRIVER ISSUE!".to_string()
+                }
+            },
+        )
+    }
+}
+
+impl ApplicationHandler for SEPLApp {
+    fn resumed(&mut self, _event_loop: &glium::winit::event_loop::ActiveEventLoop) {}
+
+    fn window_event(
+        &mut self,
+        event_loop: &glium::winit::event_loop::ActiveEventLoop,
+        _window: glium::winit::window::WindowId,
+        event: glium::winit::event::WindowEvent,
+    ) {
+        self.reload_shader_if_file_changed();
+        self.process_incoming_render_commands();
 
         match event {
             glium::winit::event::WindowEvent::CloseRequested => {
