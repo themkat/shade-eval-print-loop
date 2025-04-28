@@ -12,5 +12,10 @@ void main() {
     discard;
   }
 
-  color = font_color;
+  // black border
+  if (font_color.a <= 0.97) {
+    color = vec4(0.0, 0.0, 0.0, 1.0);
+  } else {
+    color = font_color;
+  }
 }
