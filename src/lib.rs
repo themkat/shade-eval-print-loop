@@ -76,8 +76,7 @@ struct SEPLApp {
     render_commands: Option<Receiver<RenderCommand>>,
     state_update_commands: Option<Sender<StateUpdateCommand>>,
 
-    // TODO: some sort of Error state or something ot put last_error and and maybe an enum into?
-    //       could the error thingy just be a glstate as well? With the error data?
+    // render state
     state: GLState,
 
     text_renderer: TextRenderer,
@@ -139,8 +138,6 @@ impl SEPLApp {
         let mut last_error = String::new();
         if let Err(err) = program {
             last_error = err;
-
-            // TODO: set up any error geometry
 
             program =
                 Program::from_source(&display, VERTEX_SHADER, PLACEHOLDER_FRAGMENT_SHADER, None)
@@ -316,7 +313,6 @@ impl ApplicationHandler for SEPLApp {
                 frame.finish().expect("Could not switch framebuffers");
                 self.display.flush();
             }
-            // TODO: other events
             _ => {}
         }
     }
