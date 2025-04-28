@@ -1,3 +1,26 @@
 [[https://github.com/themkat/shade-eval-print-loop/actions/workflows/build.yml][file:https://github.com/themkat/shade-eval-print-loop/actions/workflows/build.yml/badge.svg]]
 * Shade Eval Print Loop (SEPL)
-Shadertoy on steroids, but powered by Scheme for settings. Dynamically set textures, variables, and other logic that affects the execution.
+Live coding and prototyping environment. Shadertoy on steroids, but powered by Scheme for dynamically setting uniforms and other values. Dynamically set textures, variables, and other logic that affects the execution.
+
+
+Emacs is the only supported editor from my end, but the program should be able to support all editors that can connect to a process through TCP inferior-lisp style.
+
+** Features
+- Live-reloading of fragment shaders. Useful for prototyping your materials, raymarching scenes and more.
+- Set uniforms and load textures with CPU side Scheme scripting.
+- REPL (read-eval-print-loop) to interact with the shader runtime in Scheme.
+- Emacs mode using comint to easily interact with the running SEPL instance.
+
+** Usage
+# TODO: build
+# TODO: usage from Emacs
+todo
+
+
+** Architecture
+# TODO: a bit about how it works? so other editors can connect if they want to?
+#       the goal is that people know how it works. 
+todo
+
+** Contributing
+Do you want to contribute (for some reason)? Great! Be kind and constructive, and it will be great to work together :) Feel free to send in PRs with smaller changes. If you have feature requests or want bigger changes, please start by making an issue. We then have a place to discuss it, and you may then work on it without too much wasted effort :) 
