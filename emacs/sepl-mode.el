@@ -54,10 +54,6 @@
   (require 'scheme)
   (setq-local font-lock-keywords scheme-font-lock-keywords)
 
-  
-  ;; TODO: set some key bindings in buffer.
-  ;;       C-x C-e should eval current sexp etc.
-  ;;       something for eval buffer :)
 )
 
 (defcustom sepl-program-bin "/Users/marie/Programming/Rust/shade-eval-print-loop/target/debug/shade-eval-print-loop"
