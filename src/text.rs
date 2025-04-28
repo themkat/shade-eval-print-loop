@@ -58,21 +58,30 @@ impl TextRenderer {
     }
 
     fn render_text_to_texture<T: Facade>(&self, display: &T, text: &str) -> Texture2d {
-        let scale = Scale::uniform(32.0);
-        let glyphs = self.font.layout(text, scale, point(20.0, 20.0));
-
-        // TODO: process text. so we avoid too long text for single lines.
-
-        // TODO: use glyphs to decide on a suitable size
         let mut result = vec![vec![(0, 0, 0, 0); 800]; 500];
-        for glyph in glyphs {
-            // only rasterize text that have data
-            if let Some(bounding_box) = glyph.pixel_bounding_box() {
-                glyph.draw(|x, y, v| {
-                    result[(bounding_box.min.y as u32 + y) as usize]
-                        [(bounding_box.min.x as u32 + x) as usize] = (255, 0, 0, (v * 255.0) as u8);
-                });
+
+        // TODO: maybe prettier formatting?
+        // only take the last first error line. The rest are usually caused by this first one
+        let text = wrap_words(text.lines().nth(0).unwrap_or("").to_string(), 40);
+        let mut y_pos = 48.0;
+        for line in text.lines() {
+            let scale = Scale::uniform(48.0);
+            let glyphs = self.font.layout(line, scale, point(20.0, y_pos));
+
+            // TODO: use glyphs to decide on a suitable size
+            for glyph in glyphs {
+                // only rasterize text that have data
+                if let Some(bounding_box) = glyph.pixel_bounding_box() {
+                    glyph.draw(|x, y, v| {
+                        result[(bounding_box.min.y as u32 + y) as usize]
+                            [(bounding_box.min.x as u32 + x) as usize] =
+                            (255, 0, 0, (v * 255.0) as u8);
+                    });
+                }
             }
+
+            // tweaked number for spacing between lines
+            y_pos += 32.0;
         }
 
         Texture2d::new(display, result).unwrap()
@@ -109,5 +118,37 @@ impl TextRenderer {
             blend: Blend::alpha_blending(),
             ..Default::default()
         }).expect("Could not draw text to screen");
+    }
+}
+
+/// Takes a maximum length as an input and wraps the words by putting as many words on a line as possible.
+fn wrap_words(text: String, line_length: usize) -> String {
+    let mut leftover = line_length;
+    let mut result = String::with_capacity(text.len());
+
+    for word in text.split_whitespace() {
+        if (word.len() + 1) > leftover {
+            result += "\n";
+            leftover = line_length;
+        }
+        result += word;
+        result += " ";
+        leftover = leftover.saturating_sub(word.len() + 1);
+    }
+
+    result
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::text::wrap_words;
+
+    #[test]
+    fn wrap_words_test() {
+        assert_eq!(
+            "Hi \nthere ".to_string(),
+            wrap_words("Hi there".to_string(), 4)
+        );
+        assert_eq!("We gotta burn the \nrain forest, dump \ntoxic waste, \npollute the air, \nand rip up the \nOZONE! ".to_string(), wrap_words("We gotta burn the rain forest, dump toxic waste, pollute the air, and rip up the OZONE!".to_string(), 20));
     }
 }
