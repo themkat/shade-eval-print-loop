@@ -16,7 +16,7 @@
       (comint-redirect-send-command-to-process code tmp-buf sepl-repl-process nil t)
       (with-current-buffer tmp-buf
         ;; hack to wait for output to be present in tmp buffer
-        (sleep-for 0.1)
+        (sleep-for 0.5)
         (message "=> %s" (s-replace "\n" "\n   " (s-trim (buffer-string))))))
     (kill-buffer tmp-buf)))
 
