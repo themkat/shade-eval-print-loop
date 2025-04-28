@@ -165,7 +165,7 @@ impl SEPLApp {
                 textures: HashMap::new(),
             },
             text_renderer,
-            last_error: None,
+            last_error: Some(last_error),
         }
     }
 
