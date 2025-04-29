@@ -135,9 +135,9 @@ impl SEPLApp {
 
         // fallback initially to a placeholder if compilation error
         let mut program = Self::create_program(&display, fragment_shader_file.as_str());
-        let mut last_error = String::new();
+        let mut last_error = None;
         if let Err(err) = program {
-            last_error = err;
+            last_error = Some(err);
 
             program =
                 Program::from_source(&display, VERTEX_SHADER, PLACEHOLDER_FRAGMENT_SHADER, None)
@@ -162,7 +162,7 @@ impl SEPLApp {
                 textures: HashMap::new(),
             },
             text_renderer,
-            last_error: Some(last_error),
+            last_error,
         }
     }
 
