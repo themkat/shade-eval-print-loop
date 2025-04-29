@@ -24,6 +24,6 @@ jobs:
       - name: Run tests
         run: |
           cargo test
-      # - name: Static code analysis with clippy
-      #   run: |
-      #     cargo clippy --all -- -D warnings
+      - name: Static code analysis with clippy
+        run: |
+          cargo clippy --all -- -D warnings

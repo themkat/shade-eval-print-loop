@@ -30,6 +30,8 @@ struct RenderState {
     screen_size: (u32, u32),
 }
 
+type ReplInputOutputPair = (Receiver<String>, Sender<String>);
+
 /// Scheme REPL running as a process over the network on port 42069. Sends messages on a channel.
 pub struct NetworkScheme {
     scheme_vm: Engine,
@@ -42,7 +44,7 @@ impl NetworkScheme {
     /// The only user facing function. Starts a network process and runs the main loop. Blocks, so recommended to run this in its own thread.
     pub fn main_loop(mut self) {
         // input and output ports for the repl thread
-        let repl_channels: Arc<Mutex<Vec<(Receiver<String>, Sender<String>)>>> =
+        let repl_channels: Arc<Mutex<Vec<ReplInputOutputPair>>> =
             Arc::new(Mutex::new(Vec::new()));
 
         {

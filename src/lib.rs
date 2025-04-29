@@ -14,7 +14,6 @@ use glium::{
     ProgramCreationError::CompilationError,
     Surface, Texture2d, VertexBuffer,
     backend::{Facade, glutin::SimpleWindowBuilder},
-    dynamic_uniform,
     glutin::surface::WindowSurface,
     index::NoIndices,
     uniforms::{AsUniformValue, DynamicUniforms, UniformValue},
@@ -69,6 +68,8 @@ struct SEPLApp {
     display: Display<WindowSurface>,
     window: Window,
     input_file: String,
+    // need reference to the watcher to keep the file event loop running
+    #[allow(dead_code)]
     input_file_watcher: Box<dyn Watcher>,
     input_file_events: Receiver<Result<Event, notify::Error>>,
 
@@ -176,7 +177,8 @@ impl SEPLApp {
 
     /// Checks for file change notifications, and reloads the fragment shader if gets any. This might also change the error state of the program if the fragment shader contains any syntax errors.
     fn reload_shader_if_file_changed(&mut self) {
-        if let Ok(_) = self.input_file_events.try_recv() {
+        // don't give a flying fuck what kind of event. Just assume updated, lol
+        if self.input_file_events.try_recv().is_ok() {
             let program = Self::create_program(&self.display, &self.input_file);
             match program {
                 Ok(program) => {
@@ -291,14 +293,14 @@ impl ApplicationHandler for SEPLApp {
                     uniforms.insert(name, sampler);
                 }
                 for (name, val) in &uniforms {
-                    dynamic_uniforms.add(&name, val);
+                    dynamic_uniforms.add(name, val);
                 }
 
                 let mut frame = self.display.draw();
                 frame
                     .draw(
                         &self.state.vertex_buffer,
-                        &self.state.index_buffer,
+                        self.state.index_buffer,
                         &self.state.program,
                         &dynamic_uniforms,
                         &DrawParameters::default(),

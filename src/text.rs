@@ -99,7 +99,7 @@ impl TextRenderer {
         surface
             .draw(
                 &self.vertex_buffer,
-                &self.index_buffer,
+                self.index_buffer,
                 &self.solid_background_program,
                 &EmptyUniforms,
                 &DrawParameters {
@@ -112,7 +112,7 @@ impl TextRenderer {
         // we know at this point that there should always be a texture present
         let texture = self.prev_texture.as_ref().unwrap();
 
-        surface.draw(&self.vertex_buffer, &self.index_buffer, &self.program, &uniform! {
+        surface.draw(&self.vertex_buffer, self.index_buffer, &self.program, &uniform! {
             font_texture: texture.sampled().magnify_filter(glium::uniforms::MagnifySamplerFilter::Linear).minify_filter(glium::uniforms::MinifySamplerFilter::Linear)
         }, &DrawParameters {
             blend: Blend::alpha_blending(),
