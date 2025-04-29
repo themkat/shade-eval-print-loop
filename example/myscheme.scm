@@ -31,3 +31,9 @@
 (set-dynamic-uniform! "screen_width")
 
 DYNAMIC_UNIFORM_TABLE
+
+
+
+(define my-texture (load-texture "/Users/marie/Pictures/pasteldice.png"))
+my-texture
+(set-uniform! "mytex" my-texture)

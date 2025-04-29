@@ -83,6 +83,7 @@ float shadow_march(vec3 pos, vec3 ray_dir) {
 }
 
 void main() {
+  // upside down?
   vec2 uv = gl_FragCoord.xy / vec2(screen_width, screen_height);
   vec3 ray_dir = vec3(uv * 2.0 - 1.0, -1.0);
   vec3 cam_pos = vec3(0.0, 0.0, 5.0);
