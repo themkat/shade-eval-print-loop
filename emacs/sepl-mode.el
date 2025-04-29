@@ -73,7 +73,9 @@
     ;;    
     (with-current-buffer buffer
       (apply 'make-comint-in-buffer "SEPL" buffer '("localhost" . 42069) nil '())
-      (sepl-repl-mode))))
+      (sepl-repl-mode)
+      (pop-to-buffer buffer))))
+
 
 
 ;; TODO: some keywords we cna 
