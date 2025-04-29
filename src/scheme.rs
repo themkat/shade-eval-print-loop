@@ -52,6 +52,7 @@ impl NetworkScheme {
                 let listener =
                     TcpListener::bind("127.0.0.1:42069").expect("Could not bind to port 42069!");
 
+                #[allow(clippy::manual_flatten)]
                 for stream in listener.incoming() {
                     if let Ok(mut stream) = stream {
                         // create a command port to send to the repl
