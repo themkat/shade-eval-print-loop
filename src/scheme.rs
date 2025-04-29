@@ -44,8 +44,7 @@ impl NetworkScheme {
     /// The only user facing function. Starts a network process and runs the main loop. Blocks, so recommended to run this in its own thread.
     pub fn main_loop(mut self) {
         // input and output ports for the repl thread
-        let repl_channels: Arc<Mutex<Vec<ReplInputOutputPair>>> =
-            Arc::new(Mutex::new(Vec::new()));
+        let repl_channels: Arc<Mutex<Vec<ReplInputOutputPair>>> = Arc::new(Mutex::new(Vec::new()));
 
         {
             let repl_channels = Arc::clone(&repl_channels);
