@@ -46,8 +46,6 @@ pub struct NetworkScheme {
     prev_was_error: bool,
 }
 
-// TODO: should probably have a way to get data from the program as well? key strokes etc. maybe also some status on rendering we can fiddle with in scheme?
-
 impl NetworkScheme {
     /// The only user facing function. Starts a network process and runs the main loop. Blocks, so recommended to run this in its own thread.
     pub fn main_loop(mut self) {
@@ -195,10 +193,7 @@ impl NetworkScheme {
             (Instant::now() - start_time).as_secs_f32()
         });
 
-        // TODO: setup a standard library
-        // TODO: matrix loaders like perspective, lookAt etc. useful for prototyping
-
-        // TODO: loading images from file. what should our command formats image type be based upon? DynamicImage? or just a RgbaImage with 8 bits?
+        // simple texture loading
         scheme_vm.register_type::<Texture>("texture?");
         scheme_vm.register_fn("load-texture", |filename: String| Texture::new(filename));
 
@@ -319,8 +314,6 @@ impl Matrix {
     }
 
     // TODO: maybe a new method that takes ints as well? Makes it super convenient to avoid writing the .0 if we don't have any decimals. Also makes it more similar to the debug prints
-
-    // TODO: maybe implement a fromsteelval with only a list of lists? then we can easily be free to construct it the way we like..
 }
 
 impl From<&Matrix> for Matrix4<f32> {
@@ -371,7 +364,6 @@ impl Display for Matrix {
     }
 }
 
-// TODO: should we have a color texture thingy? probably won't make sense to save it as a vector directly?
 /// Simple wrapper type for textures.
 #[derive(Clone, Steel)]
 struct Texture {
