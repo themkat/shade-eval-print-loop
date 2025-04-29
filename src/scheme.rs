@@ -24,18 +24,10 @@ use steel_derive::Steel;
 use crate::command::{RenderCommand, StateUpdateCommand, UniformValue};
 
 /// The scheme process' information on the state of the renderer.
+#[derive(Default)]
 struct RenderState {
     // width, height
     screen_size: (u32, u32),
-}
-
-impl Default for RenderState {
-    // TODO: initial values or better defaults
-    fn default() -> Self {
-        Self {
-            screen_size: Default::default(),
-        }
-    }
 }
 
 /// Scheme REPL running as a process over the network on port 42069. Sends messages on a channel.
