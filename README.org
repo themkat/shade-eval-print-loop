@@ -14,14 +14,53 @@ Emacs is the only supported editor from my end, but the program should be able t
 ** Features
 - Live-reloading of fragment shaders. Useful for prototyping your materials, raymarching scenes and more.
 - Set uniforms and load textures with CPU side Scheme scripting.
+- Set uniforms that automatically update every 50 milliseconds (or close depending on your system specs). This can be elapsed time, or any other arbitrary code you may want to execute.
 - REPL (read-eval-print-loop) to interact with the shader runtime in Scheme.
 - Emacs mode using comint to easily interact with the running SEPL instance.
 
-** Usage
-# TODO: build
-# TODO: usage from Emacs
-todo
+  
+Why not just use Shadertoy? Shadertoy is good, but I want the power of Scheme and Emacs in here as well. Configure it the way I want to. Make the uniforms the names I want to, so I can easily plug the shader into other projects once I'm done.
 
+** Usage
+*** Build
+Nothing fancy.
+#+BEGIN_SRC bash
+  cargo build --release
+#+END_SRC
+
+If this seems new to you: do you even Rust?
+
+*** Emacs modes install
+First, add the emacs directory to your load path. Then you can load =sepl-mode=:
+
+#+BEGIN_SRC emacs-lisp
+  (add-to-list 'load-path "/path/to/shade-eval-print-loop/emacs/")
+  (require 'sepl-mode)
+#+END_SRC
+
+*** Usage from Emacs
+You first need to set the path to the SEPL executable. You will find it in your =target/release/= directory. Example: =/path/to/shade-eval-print-loop/target/release/shade-eval-print-loop=.
+
+#+BEGIN_SRC emacs-lisp
+  (setq sepl-program-bin "/path/to/shade-eval-print-loop/target/release/shade-eval-print-loop")
+#+END_SRC
+
+Now simply open your fragment shader of choice! Or an empty one. Simply run the command =M-x sepl-repl-start=. A new window will start, which will be your fragment shader instance. Any errors are printed on screen, but the full error log and outputs can be found in the =*SEPL-STDOUT*= buffer. There is also a Scheme REPL in =*SEPL REPL*= which can be used to evaluate scheme code to make new uniforms, load textures and similar operations. 
+
+
+You may have a scheme source file you wish to execute code from? Simply open your Scheme file and activate =sepl-mode=. You can now use =C-x C-e= to evaluate s-expression by s-expression, in any order you wish. Or evaluate the entire buffer with =M-x sepl-eval-buffer=. An example file is found in =example/myscheme.scm=.
+
+*** Scheme function interface
+The SEPL interface provides a few Scheme functions:
+- =(screen-size)=: Get the screen size as a list of two numbers, width and height. (example: =(cadr (screen-size))= to get height).
+- =(matrix row1 row2 row3 row4)=: Creates a 4x4 matrix where each argument is a list of 4 numbers.
+- =(load-texture filename)=: Loads a texture from file. This will be a standard RGBA texture in memory, represented by 4 bytes in GPU memory. Other texture types are planned. Maybe a simple list of numbers could have converter methods for 1D textures? (to be used as lookup tables or arbitrary writes on modern hardware?). Or maybe 3D textures could be fun somehow?
+- =(set-uniform! name value)=: Sets the uniform with =name= (a string) to the value in =value=. SEPL will infer the type automatically. Floats, matrices and textures are currently supported.
+- =(set-dynamic-uniform! name closure)=: Same as for =set-uniform!=, but the value is re-calculated every 50 milliseconds or so (depending on your computer). In this version the argument is a function that takes 0 arguments. You can do arbitrary logic inside of it, but it should not be too compute intensive. Then the program will slow down a lot. You might even make your computer unresponsive until you quit the program, like I did to my Macbook Air M1...
+- =(delete-dynamic-uniform! name)=: Deletes a dynamic uniform. This can be used to free up CPU resources if you have added many uniforms with lots of calculations that are suddenly unused. 
+
+
+If you by any means are interested in this project, feel free to add wishlists in Issues <3 
 
 ** Architecture
 # TODO: a bit about how it works? so other editors can connect if they want to?
