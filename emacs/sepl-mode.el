@@ -1,7 +1,5 @@
 (require 's)
 
-;; TODO: make a sepl-send-command-to-process or something that all eval style funcs can use
-
 (defun sepl-eval-sexp ()
   (interactive)
   (let* ((start (point))
@@ -40,17 +38,14 @@
   (set (make-local-variable 'sepl-repl-process)
        (get-buffer-process "*SEPL REPL*")))
 
-;; TODO: maybe some sort of error message if we try to start two proceses? Only one allowed at the moment. To make life simpler for myself. 
 (define-derived-mode sepl-repl-mode comint-mode
   "SEPL REPL"
   "Mode used inside the repl to the SEPL process. Dr. Seuss would be proud."
 
-  ;; TODO: rest of the buffer should be read only, except the prompt
   (setq-local comint-use-prompt-regexp t
               comint-prompt-regexp "> "
               comint-prompt-read-only t)
 
-  ;; TODO: could we activate highlight of scheme keywords?
   (require 'scheme)
   (setq-local font-lock-keywords scheme-font-lock-keywords)
 
@@ -61,21 +56,22 @@
   :group 'sepl
   :type 'string)
 
-(defun sepl-repl-start ()
+(defun sepl-repl-connect ()
+  "Connects to an existing SEPL instance, and starts a REPL interface."
   (interactive)
-  (let ((buffer (get-buffer-create "*SEPL REPL*"))
-        (glsl-file (buffer-file-name (current-buffer))))
-    (start-process "sepl" "*SEPL-STDOUT*" sepl-program-bin glsl-file)
-    ;; give process 2 seconds to start
-    (sleep-for 2)
-    ;; TODO: open the comint buffer in a split.
-    ;; TODO: setup the special mode for the buffer.
-    ;;    
+  (let ((buffer (get-buffer-create "*SEPL REPL*")))
     (with-current-buffer buffer
       (apply 'make-comint-in-buffer "SEPL" buffer '("localhost" . 42069) nil '())
       (sepl-repl-mode)
       (pop-to-buffer buffer))))
 
+(defun sepl-repl-start ()
+  "Starts a new SEPL instance and starts a REPL interface."
+  (interactive)
+  (let ((glsl-file (buffer-file-name (current-buffer))))
+    (start-process "sepl" "*SEPL-STDOUT*" sepl-program-bin glsl-file)
+    ;; give process 2 seconds to start
+    (sleep-for 2)
+    (sepl-repl-connect)))
 
-
-;; TODO: some keywords we cna 
+(provide 'sepl-mode)
