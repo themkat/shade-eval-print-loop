@@ -69,27 +69,29 @@ impl NetworkScheme {
 
                         let mut reader = BufReader::new(stream.try_clone().unwrap());
 
-                        // TODO: maybe allow multiple requests instead of blocking on first connection? Reconnects etc. might be messy here
-                        loop {
-                            // write prompt
-                            stream.write_all(b"> ").unwrap();
+                        // run the repl in a new thread, and let it crash if the user disconnects unexpectedly.
+                        thread::spawn(move || {
+                            loop {
+                                // write prompt
+                                stream.write_all(b"> ").unwrap();
 
-                            let mut buffer = String::new();
-                            if let Ok(bytes_read) = reader.read_line(&mut buffer) {
-                                if bytes_read == 0 {
-                                    continue;
+                                let mut buffer = String::new();
+                                if let Ok(bytes_read) = reader.read_line(&mut buffer) {
+                                    if bytes_read == 0 {
+                                        continue;
+                                    }
+
+                                    // run the command
+                                    repl_input_sender.send(buffer).unwrap();
+                                    let result = repl_output_receiver.recv().unwrap();
+
+                                    //let result = self.eval(buffer);
+                                    stream.write_all(&result.into_bytes()).unwrap();
+
+                                    stream.flush().unwrap();
                                 }
-
-                                // run the command
-                                repl_input_sender.send(buffer).unwrap();
-                                let result = repl_output_receiver.recv().unwrap();
-
-                                //let result = self.eval(buffer);
-                                stream.write_all(&result.into_bytes()).unwrap();
-
-                                stream.flush().unwrap();
                             }
-                        }
+                        });
                     }
                 }
             });
@@ -181,6 +183,9 @@ impl NetworkScheme {
         // TODO: should we support other matrices than 4x4?
         scheme_vm.register_type::<Matrix>("matrix?");
         scheme_vm.register_fn("matrix", Matrix::new);
+
+        // TODO: a noise function?
+        // assume -1.0 to 1.0 domain. Take in size? Should we be able to take in seed as well? or should we var arg this bad boy? Can we have an option last argument? or do everything need to be filled in?
 
         // get the elapsed time in seconds (floating point)
         scheme_vm.register_fn("get-elapsed-time", move || {
@@ -559,9 +564,14 @@ mod tests {
         )
     }
 
+    // TODO: test for stopping/deleting a dynamic uniform?
+    //       what should the test be? receiving no event?
+
     // TODO: ints! There is some handling of plain integers. Useful in some situations in glsl
 
     // TODO: maybe make some rules for dynamic uniforms to avoid too many pitfalls...
     //       maybe time limit or detection for if stuck?
     //    - arguments == 0, only that allowed
+
+    // TODO: input events like keyboard key down and mouse clicks
 }
