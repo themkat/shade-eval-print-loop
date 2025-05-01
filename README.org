@@ -21,6 +21,12 @@ Emacs is the only supported editor from my end, but the program should be able t
   
 Why not just use Shadertoy? Shadertoy is good, but I want the power of Scheme and Emacs in here as well. Configure it the way I want to. Make the uniforms the names I want to, so I can easily plug the shader into other projects once I'm done.
 
+*** Creators wishlist
+Features I might want to introduce:
+- [ ] Noise textures (Perlin noise)
+- [ ] Keyboard listener functions.
+- [ ] Mouse listener functions. Maybe position and/or click? The issue here is how to NOT overload the event input channels. Sending every mouse position without any delays or logic will probably do just that.
+
 ** Usage
 *** Build
 Nothing fancy.
