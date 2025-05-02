@@ -45,6 +45,13 @@ First, add the emacs directory to your load path. Then you can load =sepl-mode=:
 #+END_SRC
 
 *** Usage from Emacs
+**** Connect to running SEPL process
+You first need to start a SEPL process yourself. This is done by simply running the program compiled above with your fragment shader path as an argument.
+
+
+Once it is started, you can connect to this process directly from Emacs with =sepl-repl-connect=. Any errors are printed on screen in the SEPL window, but the full error log and outputs can be found in the =*SEPL-STDOUT*= buffer. 
+
+**** Start SEPL process "automatically"
 You first need to set the path to the SEPL executable. You will find it in your =target/release/= directory. Example: =/path/to/shade-eval-print-loop/target/release/shade-eval-print-loop=.
 
 #+BEGIN_SRC emacs-lisp
@@ -53,7 +60,7 @@ You first need to set the path to the SEPL executable. You will find it in your 
 
 Now simply open your fragment shader of choice! Or an empty one. Simply run the command =M-x sepl-repl-start=. A new window will start, which will be your fragment shader instance. Any errors are printed on screen, but the full error log and outputs can be found in the =*SEPL-STDOUT*= buffer. There is also a Scheme REPL in =*SEPL REPL*= which can be used to evaluate scheme code to make new uniforms, load textures and similar operations. 
 
-
+**** Interact with REPL from Scheme source files
 You may have a scheme source file you wish to execute code from? Simply open your Scheme file and activate =sepl-mode=. You can now use =C-x C-e= to evaluate s-expression by s-expression, in any order you wish. Or evaluate the entire buffer with =M-x sepl-eval-buffer=. An example file is found in =example/myscheme.scm=.
 
 *** Scheme function interface
@@ -69,9 +76,21 @@ The SEPL interface provides a few Scheme functions:
 If you by any means are interested in this project, feel free to add wishlists in Issues <3 
 
 ** Architecture
-# TODO: a bit about how it works? so other editors can connect if they want to?
-#       the goal is that people know how it works. 
-todo
+SEPL starts a group of threads to do work in parallel. The main thread is the render thread, which handles rendering using OpenGL (through Glium). In addition, a new thread is spawned for the Scheme interpreter logic. All communication with the Scheme interpreter (from outside the SEPL binary) happens through TCP. Since you can only run one SEPL process at a time, the port number to connect to is deterministic. It's always 42069 (I'm an adult, lol).
+
+
+In summary:
+- Main rendering thread
+- Scheme interpreter thread
+  - TCP server thread
+    - Client thread (one for each connecting client)
+
+
+All communication between threads is done through channels. For evaluating Scheme code, [[https://github.com/mattwparas/steel][the Steel interpreter]] is used. This interpreter cannot be moved between threads. Therefore, each client thread sends the Scheme code to be evaluated via a channel, and receives the reply in a channel. For simplicity, these are simply strings.
+
+
+The Scheme code has information on the rendering context through channels as well. Updates on screen size (and hopefully soon: key presses and mouse positions) are done this way.
+
 
 ** Contributing
 Do you want to contribute (for some reason)? Great! Be kind and constructive, and it will be great to work together :) Feel free to send in PRs with smaller changes. If you have feature requests or want bigger changes, please start by making an issue. We then have a place to discuss it, and you may then work on it without too much wasted effort :) 
