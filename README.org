@@ -76,7 +76,7 @@ The SEPL interface provides a few Scheme functions:
 If you by any means are interested in this project, feel free to add wishlists in Issues <3 
 
 ** Architecture
-SEPL starts a group of threads to do work in parallel. The main thread is the render thread, which handles rendering using OpenGL (through Glium). In addition, a new thread is spawned for the Scheme interpreter logic. All communication with the Scheme interpreter (from outside the SEPL binary) happens through TCP. Since you can only run one SEPL process at a time, the port number to connect to is deterministic. It's always 42069 (I'm an adult, lol).
+SEPL starts a group of threads to do work in parallel. The main thread is the render thread, which handles rendering using OpenGL (through Glium). In addition, a new thread is spawned for the Scheme interpreter logic. All communication with the Scheme interpreter (from outside the SEPL binary) happens through TCP. You can only run one SEPL process at a time, so the port number to connect to is deterministic. It's always 42069 (I'm an adult, lol).
 
 
 In summary:
