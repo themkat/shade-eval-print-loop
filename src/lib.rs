@@ -47,7 +47,9 @@ void main() {
 
 pub fn init() {
     // TODO: make it more clear with error messages etc. that program requires an input file
-    let input_file = args().nth(1).unwrap_or("shaders/pass.frag".to_string());
+    let input_file = args()
+        .nth(1)
+        .expect("fragment shader filename should be the only argument!");
 
     let event_loop = EventLoop::new().expect("Failed to create event loop");
     let mut app = SEPLApp::new(&event_loop, input_file);
