@@ -8,8 +8,7 @@
                 (point)))
          ;; sepl requires single lines
          (code (s-replace "\n" " " (buffer-substring start end)))
-         (tmp-buf (get-buffer-create "*sepl-tmp-buf*"))
-         (process))
+         (tmp-buf (get-buffer-create "*sepl-tmp-buf*")))
     (when (boundp 'sepl-repl-process)
       (comint-redirect-send-command-to-process code tmp-buf sepl-repl-process nil t)
       (with-current-buffer tmp-buf
