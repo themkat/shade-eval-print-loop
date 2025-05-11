@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-rust:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,3 +27,15 @@ jobs:
       - name: Static code analysis with clippy
         run: |
           cargo clippy --all -- -D warnings
+
+  tests-emacs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: purcell/setup-emacs@master
+        with:
+          version: 29.4
+      - name: Run ERT tests
+        working-directory: emacs
+        run: |
+          emacs -q -batch -l ert -l deps.el -l sepl-mode.el -l tests.el -f ert-run-tests-batch-and-exit
