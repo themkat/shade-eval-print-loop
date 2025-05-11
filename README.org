@@ -6,7 +6,7 @@
 This package is experimental, and will continue to evolve. Should be considered alpha quality software at the moment.
 #+END_QUOTE
 
-Live coding and prototyping environment for fragment shaders. Shadertoy on steroids, but powered by Scheme for dynamically setting uniforms and other values. Dynamically set textures, variables, and other logic that affects the execution.
+Live coding and prototyping environment for fragment shaders. Inspired by Shadertoy, but powered by Scheme for dynamically setting uniforms and other values. Dynamically set textures, variables, and other logic that affects the execution.
 
 
 Emacs is the only supported editor from my end, but the program should be able to support all editors that can connect to a process through TCP inferior-lisp style.
