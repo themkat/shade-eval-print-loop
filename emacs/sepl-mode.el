@@ -8,29 +8,31 @@
                   (car (s-split ";" line)))
                 (s-lines code))))
 
+(defun sepl--eval (code)
+  "Internal helper function to evaluate code and print result in minibuffer"
+  (when (boundp 'sepl-repl-process)
+    (let ((tmp-buf (get-buffer-create "*sepl-tmp-buf*")))
+      (comint-redirect-send-command-to-process code tmp-buf sepl-repl-process nil t)
+      ;; TODO: why is this nil here :O is it because kill runs fast??
+      (with-current-buffer tmp-buf
+        ;; hack to wait for output to be present in tmp buffer
+        (sleep-for 0.5)
+        (message "=> %s" (s-replace "\n" "\n   " (s-trim (buffer-string)))))
+      (kill-buffer tmp-buf))))
+
 (defun sepl-eval-sexp ()
   (interactive)
   (let* ((start (point))
          (end (save-excursion
                 (backward-sexp)
                 (point)))
-         ;; sepl requires single lines
-         (code (sepl--remove-comments (buffer-substring start end)))
-         (tmp-buf (get-buffer-create "*sepl-tmp-buf*")))
-    (when (boundp 'sepl-repl-process)
-      (comint-redirect-send-command-to-process code tmp-buf sepl-repl-process nil t)
-      (with-current-buffer tmp-buf
-        ;; hack to wait for output to be present in tmp buffer
-        (sleep-for 0.5)
-        (message "=> %s" (s-replace "\n" "\n   " (s-trim (buffer-string))))))
-    (kill-buffer tmp-buf)))
+         (code (sepl--remove-comments (buffer-substring start end))))
+    (sepl--eval code)))
 
-;; TODO: how to handle lines with comments?
 (defun sepl-eval-buffer ()
   (interactive)
   (when (boundp 'sepl-repl-process)
-    (comint-send-string sepl-repl-process
-                        (s-replace "\n" " " (buffer-string)))))
+    (sepl--eval (sepl--remove-comments (buffer-string)))))
 
 (defvar sepl-mode-map
   (let ((map (make-sparse-keymap)))
