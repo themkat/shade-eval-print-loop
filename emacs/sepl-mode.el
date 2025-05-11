@@ -1,4 +1,12 @@
 (require 's)
+(require 'dash)
+
+(defun sepl--remove-comments (code)
+  "Removes comments and newlines from code given in CODE. After execution, all lines will be concatenated to a single line."
+  (s-join " "
+          (-map (lambda (line)
+                  (car (s-split ";" line)))
+                (s-lines code))))
 
 (defun sepl-eval-sexp ()
   (interactive)
@@ -7,7 +15,7 @@
                 (backward-sexp)
                 (point)))
          ;; sepl requires single lines
-         (code (s-replace "\n" " " (buffer-substring start end)))
+         (code (sepl--remove-comments (buffer-substring start end)))
          (tmp-buf (get-buffer-create "*sepl-tmp-buf*")))
     (when (boundp 'sepl-repl-process)
       (comint-redirect-send-command-to-process code tmp-buf sepl-repl-process nil t)
@@ -17,6 +25,7 @@
         (message "=> %s" (s-replace "\n" "\n   " (s-trim (buffer-string))))))
     (kill-buffer tmp-buf)))
 
+;; TODO: how to handle lines with comments?
 (defun sepl-eval-buffer ()
   (interactive)
   (when (boundp 'sepl-repl-process)
@@ -48,7 +57,8 @@
   (require 'scheme)
   (setq-local font-lock-keywords scheme-font-lock-keywords)
 
-)
+  ;; TODO: completion of built-ins?
+  )
 
 (defcustom sepl-program-bin "/Users/marie/Programming/Rust/shade-eval-print-loop/target/debug/shade-eval-print-loop"
   "Path to the SEPL binary"
