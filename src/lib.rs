@@ -82,6 +82,8 @@ struct SEPLApp {
     // render state
     state: GLState,
 
+    should_rerender: bool,
+
     text_renderer: TextRenderer,
     last_error: Option<String>,
 }
@@ -164,6 +166,7 @@ impl SEPLApp {
                 uniforms: HashMap::new(),
                 textures: HashMap::new(),
             },
+            should_rerender: true,
             text_renderer,
             last_error,
         }
@@ -186,6 +189,7 @@ impl SEPLApp {
                 Ok(program) => {
                     self.last_error = None;
                     self.state.program = program;
+                    self.should_rerender = true;
                     self.window.request_redraw();
                     println!("[INFO]Refreshed program");
                 }
@@ -229,6 +233,7 @@ impl SEPLApp {
                         self.state.uniforms.insert(name, uniform_value);
                     }
                 }
+                self.should_rerender = true;
             }
         }
     }
@@ -268,6 +273,7 @@ impl ApplicationHandler for SEPLApp {
             }
             glium::winit::event::WindowEvent::Resized(new_size) => {
                 self.display.resize(new_size.into());
+                self.should_rerender = true;
 
                 if let Some(sender) = &self.state_update_commands {
                     sender
@@ -278,8 +284,8 @@ impl ApplicationHandler for SEPLApp {
                         .unwrap();
                 }
             }
-            glium::winit::event::WindowEvent::RedrawRequested => {
-                // TODO: tweak so we avoid redrawing if we don't have dynamic variables being changed? maybe we could just have a flag and a match guard?
+            // only re-render if we have something to render. else, ignore event
+            glium::winit::event::WindowEvent::RedrawRequested if self.should_rerender => {
                 let mut uniforms = HashMap::new();
                 let mut dynamic_uniforms = DynamicUniforms::new();
                 for (name, value) in &self.state.uniforms {
@@ -316,6 +322,7 @@ impl ApplicationHandler for SEPLApp {
 
                 frame.finish().expect("Could not switch framebuffers");
                 self.display.flush();
+                self.should_rerender = false;
             }
             _ => {}
         }
