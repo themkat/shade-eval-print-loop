@@ -1,8 +1,17 @@
 * Example code
+To get you started with some examples, I have made some quick and dirty ones here. Most should be loadable with ease. For =texture.frag= you need to load your own texture in the Scheme code. Example usage is found in example Scheme code.
+
+
 Shaders:
 - =texture.frag=: Simple shader that loads a texture and moves it around the screen.
 - =raymarch.frag=: Simple raymarcher fragment shader.
-  
+- =hearts.frag=: Heart patterns with some "noise"/"randomness" put in. 
+- =plasma.frag=: Plasma using the classical sum of sines (and cos) technique.
+
 
 Scheme code:
 - =myscheme.scm=: Some sample Scheme code I have used with the examples. 
+
+
+
+Thanks to [[https://iquilezles.org/articles/][Inigo Quillez]] obviously! Like anyone who codes shaders, I owe a lot to him. His guides on distance functions, palettes etc. are amazing. Thought he deserved a special mention since I use some of his functions in my shaders here :)
