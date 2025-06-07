@@ -11,6 +11,9 @@ Live coding and prototyping environment for fragment shaders. Inspired by Shader
 
 Emacs is the only supported editor from my end, but the program should be able to support all editors that can connect to a process through TCP inferior-lisp style.
 
+[[./screenshot.gif]]
+(screenshot from an Emacs session where we see live reloading of shader, as well as error message printing)
+
 ** Features
 - Live-reloading of fragment shaders. Useful for prototyping your materials, raymarching scenes and more.
 - Set uniforms and load textures with CPU side Scheme scripting.
