@@ -16,11 +16,10 @@ pub enum UniformValue {
 /// Commands meant to be received by the renderer.
 #[derive(Debug, PartialEq)]
 pub enum RenderCommand {
-    // TODO: what kind of value?
     SetUniform(String, UniformValue),
 }
 
-// TODO: decide on a structure for sending commands the other way
+/// Commands the render engine sends to consumers (e.g, our Scheme instance)
 pub enum StateUpdateCommand {
     ScreenSizeChanged(u32, u32),
 }

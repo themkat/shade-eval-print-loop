@@ -126,7 +126,6 @@ impl SEPLApp {
 
         // listen to changes on the input file
         let (sender, receiver) = channel();
-        // TODO: do we need to keep this around? or is it enough to just keep the receiver channel? Play around with it
         let mut input_file_watcher =
             notify::recommended_watcher(sender).expect("Could not initialize file watcher");
         input_file_watcher

@@ -13,7 +13,6 @@
   (when (boundp 'sepl-repl-process)
     (let ((tmp-buf (get-buffer-create "*sepl-tmp-buf*")))
       (comint-redirect-send-command-to-process code tmp-buf sepl-repl-process nil t)
-      ;; TODO: why is this nil here :O is it because kill runs fast??
       (with-current-buffer tmp-buf
         ;; hack to wait for output to be present in tmp buffer
         (sleep-for 0.5)
