@@ -193,8 +193,6 @@ impl SEPLApp {
                 Ok(program) => {
                     self.last_error = None;
                     self.state.program = program;
-                    self.should_rerender = true;
-                    self.window.request_redraw();
                     println!("[INFO]Refreshed program");
                 }
                 Err(err) => {
@@ -202,6 +200,9 @@ impl SEPLApp {
                     eprintln!("[ERROR] {}", err);
                 }
             }
+
+            self.window.request_redraw();
+            self.should_rerender = true;
         }
     }
 
