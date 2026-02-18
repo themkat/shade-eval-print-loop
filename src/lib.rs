@@ -184,8 +184,7 @@ impl SEPLApp {
         // just checking for any event worked on Mac, but on my Arch wayland system I need to explicitly check event type
         // double result for some reason?
         if let Ok(Ok(Event {
-            kind:
-                notify::EventKind::Modify(..),
+            kind: notify::EventKind::Modify(..),
             ..
         })) = self.input_file_events.try_recv()
         {
