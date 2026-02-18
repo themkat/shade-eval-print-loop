@@ -181,8 +181,14 @@ impl SEPLApp {
 
     /// Checks for file change notifications, and reloads the fragment shader if gets any. This might also change the error state of the program if the fragment shader contains any syntax errors.
     fn reload_shader_if_file_changed(&mut self) {
-        // don't give a flying fuck what kind of event. Just assume updated, lol
-        if self.input_file_events.try_recv().is_ok() {
+        // just checking for any event worked on Mac, but on my Arch wayland system I need to explicitly check event type
+        // double result for some reason?
+        if let Ok(Ok(Event {
+            kind:
+                notify::EventKind::Modify(..),
+            ..
+        })) = self.input_file_events.try_recv()
+        {
             let program = Self::create_program(&self.display, &self.input_file);
             match program {
                 Ok(program) => {
